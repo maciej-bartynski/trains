@@ -1,0 +1,15 @@
+menu-cell-element {
+    display: block;
+    position: fixed;
+    width: 200px;
+    min-height: 300px;
+    top: 50px;
+    left: 50px;
+    border-radius: 20px;
+    background-color: #7b99a9;
+    border-top: 6px solid rgb(0, 56, 68);
+    padding: 10px;
+    box-sizing: border-box;
+    box-shadow: 0 0 10px 0 rgba(0, 0, 0, 0.5);
+    padding: 20px;
+}

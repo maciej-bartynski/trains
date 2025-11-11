@@ -1,0 +1,169 @@
+game-field-element {
+    position: absolute;
+    box-sizing: border-box;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    box-sizing: border-box;
+}
+
+.edge-top,
+.edge-bottom,
+.edge-left,
+.edge-right {
+    position: absolute;
+    width: 50px;
+    height: 5px;
+    top: 0;
+    left: 0;
+    box-sizing: border-box;
+    display: block;
+}
+
+.edge-top {
+    left: 0;
+    top: 0px;
+    transform: rotate(180deg);
+}
+
+.edge-bottom {
+    top: unset;
+    transform: rotate(0deg);
+    bottom: 0px;
+}
+
+.edge-left {
+    top: 22.5px;
+    left: -22.5px;
+    transform: rotate(90deg);
+}
+
+.edge-right {
+    right: -22.5px;
+    left: unset;
+    top: 22.5px;
+    transform: rotate(-90deg);
+}
+
+game-field-element * {
+    box-sizing: border-box;
+}
+
+game-field-element.--hidden {
+    background-color: #001d04;
+}
+
+game-field-element.--ready {
+    background-color: #004f0b;
+    border: 0.5px solid white;
+    box-sizing: content-box;
+    transform: translate(-0.5px, -0.5px);
+}
+
+game-field-element.--visible {
+    background-color: #bf9b17;
+    border: none;
+    box-sizing: border-box;
+    transform: none;
+}
+
+construction-progress-element {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: transparent;
+    z-index: 1;
+}
+
+construction-progress-element img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    object-position: center;
+}
+
+construction-progress-element .progress {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    font-size: 12px;
+    font-weight: bold;
+    font-family: 'Arial', sans-serif;
+    color: rgb(255, 255, 255);
+    text-align: center;
+    line-height: 100%;
+    vertical-align: middle;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+construction-progress-element .progress-circle {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border: solid 2px rgb(255, 255, 255);
+    border-radius: 50%;
+    border-top-color: transparent;
+    animation: progress-circle-animation 1s linear infinite;
+}
+
+@keyframes progress-circle-animation {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+game-field-element img.building-image {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    object-position: center;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 2;
+}
+
+build-operation-indicator-element {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 3;
+}
+
+build-operation-indicator-element.--can-build {
+    cursor: 'crosshair';
+}
+
+build-operation-indicator-element.--cannot-build {
+    cursor: not-allowed;
+}
+
+build-operation-indicator-element img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    object-position: center;
+    opacity: 0.75;
+}

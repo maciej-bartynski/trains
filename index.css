@@ -1,0 +1,13 @@
+:root {
+    --menu-height: 126px
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    background-color: none;
+}
+
+* {
+    box-sizing: border-box;
+}

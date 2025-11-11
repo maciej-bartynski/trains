@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script type="importmap">
+    {
+        "imports": {
+            "#src/": "./dist/"
+        }
+    }
+    </script>
+    <script src="./dist/index.js" type="module"></script>
+    <link rel="stylesheet" href="./index.css" />
+    <link rel="stylesheet" href="./css/game-board.css" />
+    <link rel="stylesheet" href="./css/game-field.css" />
+    <link rel="stylesheet" href="./css/train-run.css" />
+    <link rel="stylesheet" href="./css/menu-cell.css" />
+    <link rel="stylesheet" href="./css/action-menu.css" />
+    <link rel="stylesheet" href="./css/menu-bottom-element.css" />
+</head>
+
+<body>
+    <game-board-element></game-board-element>
+    <menu-bottom-element></menu-bottom-element>
+    <menu-cell-element></menu-cell-element>
+    <action-menu> </action-menu>
+</body>
+
+</html>

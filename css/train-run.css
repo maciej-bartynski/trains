@@ -1,0 +1,156 @@
+train-run-element {
+    display: block;
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    box-sizing: border-box;
+    top: 0;
+    left: 0;
+    z-index: 10;
+}
+
+train-run-element.from-top {
+    transform: rotate(90deg);
+}
+
+train-run-element.from-bottom {
+    transform: rotate(-90deg);
+}
+
+train-run-element.from-left {
+    transform: rotate(0deg);
+}
+
+train-run-element.from-right {
+    transform: rotate(180deg);
+}
+
+train-run-element .stright-route,
+train-run-element .stright-stop,
+train-run-element .turn-left-route,
+train-run-element .turn-right-route,
+train-run-element .stright-start {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+    box-sizing: border-box;
+    transform-origin: top left;
+}
+
+train-run-element .turn-right-route {
+    transform-origin: bottom left;
+}
+
+train-run-element .straight-route.from-top,
+train-run-element .stright-stop.from-top,
+train-run-element .turn-left-route.from-top,
+train-run-element .turn-right-route.from-top,
+train-run-element .stright-start.from-top {
+    transform: rotate(90deg);
+}
+
+train-run-element .straight-route.from-bottom,
+train-run-element .stright-stop.from-bottom,
+train-run-element .turn-left-route.from-bottom,
+train-run-element .turn-right-route.from-bottom,
+train-run-element .stright-start.from-bottom {
+    transform: rotate(-90deg);
+}
+
+train-run-element .straight-route.from-left,
+train-run-element .stright-stop.from-left,
+train-run-element .turn-left-route.from-left,
+train-run-element .turn-right-route.from-left,
+train-run-element .stright-start.from-left {
+    transform: rotate(0deg);
+}
+
+train-run-element .straight-route.from-right,
+train-run-element .stright-stop.from-right,
+train-run-element .turn-left-route.from-right,
+train-run-element .turn-right-route.from-right,
+train-run-element .stright-start.from-right {
+    transform: rotate(180deg);
+}
+
+train-run-element .train {
+    width: 25px;
+    height: 16px;
+    background-color: red;
+    border-radius: 4px;
+    position: absolute;
+    top: calc(50% - 8px);
+    left: calc(0% - 12.5px);
+}
+
+train-run-element .stright-route {
+    animation: stright-route-animation 1s linear forwards;
+}
+
+train-run-element .stright-stop {
+    animation: stright-stop-animation 1s ease-out forwards;
+}
+
+train-run-element .stright-start {
+    animation: stright-start-animation 1s ease-in forwards;
+}
+
+train-run-element .turn-left-route {
+    animation: turn-left-route-animation 1s linear forwards;
+}
+
+train-run-element .turn-right-route {
+    animation: turn-right-route-animation 1s linear forwards;
+}
+
+@keyframes stright-route-animation {
+    from {
+        transform: translate(0);
+    }
+
+    to {
+        transform: translate(100%);
+    }
+}
+
+@keyframes stright-stop-animation {
+    from {
+        transform: translate(0);
+    }
+
+    to {
+        transform: translate(50%);
+    }
+}
+
+@keyframes stright-start-animation {
+    from {
+        transform: translate(50%);
+    }
+
+    to {
+        transform: translate(100%);
+    }
+}
+
+@keyframes turn-left-route-animation {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(-90deg);
+    }
+}
+
+@keyframes turn-right-route-animation {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(90deg);
+    }
+}
