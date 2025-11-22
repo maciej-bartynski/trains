@@ -54,8 +54,9 @@ document.addEventListener('DOMContentLoaded', async (): Promise<void> => {
         gameBoard.getField({ row: 7, column: 10 })?.buildRailwayGarage({
             direction: Direction.Bottom
         });
-        setTimeout(() => {
-            FloatersService.getInstance().onNewAddressUncovered({ column: 10, row: 10 })
-        }, 100);
     }
+
+    setTimeout(() => {
+        FloatersService.getInstance().onNewAddressUncovered({ column: 10, row: 10 })
+    }, 100);
 });
