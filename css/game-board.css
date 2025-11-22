@@ -5,7 +5,23 @@ game-board-element {
     height: 100vh;
     box-sizing: border-box;
     background-color: rgb(6, 0, 20);
-    background-color: rgb(22, 84, 52);
-    background-color: rgb(10, 41, 26);
     overflow: auto;
+}
+
+game-board-element .GameBoardElement_floater {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 0px;
+    height: 0px;
+}
+
+game-board-element .GameBoardElement_world-bg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    background-color: rgb(10, 41, 26);
+    box-shadow: inset 0 0 25px 2px rgb(0, 0, 0);
+    border-radius: 25px;
+    overflow: hidden;
 }

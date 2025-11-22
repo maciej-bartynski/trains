@@ -1,11 +1,14 @@
+import Address from "#src/types/Address"
 import BuildingKind from "#src/types/BuildingKind"
 import Orientation, { OrientationSquareVariant } from "#src/types/Orientation.js"
+import TrainRouteEvent from "#src/types/TrainTrespassingEvent"
 
 enum ActionsMenuOptionName {
     BuildRailway = 'build-railway',
     BuildBuilding = 'build-building',
     BuildTrain = 'build-train',
     TrainsList = 'trains-list',
+    TrainSetRoute = 'train-set-route',
     Destroy = 'destroy'
 }
 
@@ -27,6 +30,9 @@ type BuildBuildingOption = {
 
 type BuildTrainOption = {
     type: ActionsMenuOptionName.BuildTrain,
+    payload?: {
+        address: Address;
+    }
 }
 
 type TrainsListOption = {
@@ -37,7 +43,15 @@ type DestroyOption = {
     type: ActionsMenuOptionName.Destroy,
 }
 
-type ActionsMenuOption = BuildBuildingOption | BuildRailwayOption | TrainsListOption | DestroyOption | BuildTrainOption
+type TrainSetRouteOption = {
+    type: ActionsMenuOptionName.TrainSetRoute,
+    payload: {
+        trainId: string,
+        routes?: Array<TrainRouteEvent[]> | undefined
+    }
+}
+
+type ActionsMenuOption = BuildBuildingOption | BuildRailwayOption | TrainsListOption | DestroyOption | BuildTrainOption | TrainSetRouteOption
 
 export default ActionsMenuOptionName;
 
@@ -46,5 +60,6 @@ export type {
     BuildBuildingOption,
     TrainsListOption,
     DestroyOption,
-    ActionsMenuOption
+    ActionsMenuOption,
+    TrainSetRouteOption
 }

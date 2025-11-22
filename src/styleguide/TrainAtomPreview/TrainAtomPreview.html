@@ -1,0 +1,18 @@
+<section data-selector="trains">
+    <h2>Trains</h2>
+    <train-atom class="--presentation"></train-atom>
+    <br />
+    <train-atom class="--presentation --moving"></train-atom>
+    <br />
+    <input type="color" name="trains-color" />
+    <script>
+        const section = document.querySelector('section[data-selector="trains"]')
+        const input = section.querySelector('input[name="trains-color"]');
+        const trainElements = section.querySelectorAll('train-atom');
+        input.onchange = (e) => {
+            [...trainElements].forEach(trainElement => {
+                trainElement.setAttribute('data-color', e.target.value);
+            })
+        }
+    </script>
+</section>

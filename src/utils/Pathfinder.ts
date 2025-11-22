@@ -1,4 +1,4 @@
-import gameBoard from "#src/GameBoard.js";
+import GameBoard from "#src/GameBoard.js";
 import FieldModel from "#src/models/FieldModel.js";
 import TrainModel from "#src/models/TrainModel.js";
 import Address from "#src/types/Address.js";
@@ -99,7 +99,7 @@ const nextEventWithDeadEndAssumption = (events: (TrainTrespassingEvent | TrainDe
             return null;
         }
 
-        const currentField = gameBoard.getField(nextAddress);
+        const currentField = GameBoard.getInstance().getField(nextAddress);
         const fieldEventsCost = (currentField?.events.length ?? 0);
         const fieldTresspassingCost = 1;
         return {
@@ -226,9 +226,13 @@ const getShortestRoute = (allRoutes: NonEmptyArray<NonEmptyArray<TrainRouteEvent
     return allRoutes[0]
 }
 
-const performAStarRouteSearching = (train: TrainModel) => {
-    const pointA = gameBoard.getField(train.location);
-    const pointB = train.destination ? gameBoard.getField(train.destination) : null;
+// const performAStarRouteSearching = (train: TrainModel) => {
+const performAStarRouteSearching = (train: {
+    location: Address,
+    destination: Address,
+}) => {
+    const pointA = GameBoard.getInstance().getField(train.location);
+    const pointB = train.destination ? GameBoard.getInstance().getField(train.destination) : null;
     if (!pointA || !pointB) return;
 
     const _allRoutes: TrainRouteEvent[][] = listFieldRailwayDirections(pointA.railwayOrientation)
@@ -256,7 +260,7 @@ const performAStarRouteSearching = (train: TrainModel) => {
     while (!routeFound) {
         const currentRoute = getShortestRoute(allRoutes, pointB.address);
         const previousEvent = getLastRouteEvent(currentRoute) as (TrainDepartureEvent | TrainTrespassingEvent);
-        const previousField = gameBoard.getField(previousEvent.address);
+        const previousField = GameBoard.getInstance().getField(previousEvent.address);
         if (!previousField) {
             /** Something went wrong. Clear this route and forget */
             const _allRoutesOrEmptyStack = deleteRouteFromRoutesStack(allRoutes, currentRoute);
@@ -374,7 +378,7 @@ const performAStarRouteSearching = (train: TrainModel) => {
 
 const findAllRoutes = async (train: TrainModel) => {
 
-    const departureFrom = gameBoard.getField(train.location);
+    const departureFrom = GameBoard.getInstance().getField(train.location);
     const routes: TrainRouteEvent[][] = [];
 
     const iterateDirections = (params: { route: (TrainDepartureEvent | TrainTrespassingEvent)[] }) => {
@@ -382,7 +386,7 @@ const findAllRoutes = async (train: TrainModel) => {
         const route = [...params.route];
 
         const lastEvent = route[route.length - 1]!;
-        const lastField = gameBoard.getField(lastEvent.address);
+        const lastField = GameBoard.getInstance().getField(lastEvent.address);
         const adjacentFields = AdjacentFields.getAdjacentFields({ address: lastEvent.address });
         const lastEventTo = lastEvent.to;
 
@@ -504,7 +508,8 @@ const pickShortestRoute = (routes: TrainRouteEvent[][]) => {
 
 const Pathfinder = {
     findAllRoutes,
-    pickShortestRoute
+    pickShortestRoute,
+    performAStarRouteSearching
 }
 
 export default Pathfinder;

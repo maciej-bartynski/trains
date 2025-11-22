@@ -1,9 +1,38 @@
 import actionsMenuService from "#src/service/ActionsMenuService/index.js";
 import ActionsMenuService from "#src/service/ActionsMenuService/ActionsMenuService.js";
 import ActionsMenuOptionName from "#src/service/ActionsMenuService/types.js";
+import GameBoard from "#src/GameBoard.js";
 
 class ActionMenuElement extends HTMLElement {
     static componentName = 'action-menu';
+
+    private styleguideButton() {
+        const button = document.createElement('a') as HTMLAnchorElement;
+        button.classList.add('action-menu_action-btn');
+        button.innerHTML = `
+            <span class="action-menu_action-btn-ornament"></span>
+            <span>SG</span>
+            <span class="action-menu_action-btn-dot"></span>
+        `;
+        button.href = 'styleguide.html';
+        return button;
+    }
+
+    private populateSaveButton() {
+        const button = document.createElement('button') as HTMLButtonElement;
+        button.classList.add('action-menu_action-btn');
+        button.innerHTML = `
+            <span class="action-menu_action-btn-ornament"></span>
+            <span>Save</span>
+            <span class="action-menu_action-btn-dot"></span>
+        `;
+        button.onclick = () => {
+            const gameJson = GameBoard.getInstance().toJSON();
+            const gameString = JSON.stringify(gameJson);
+            window.localStorage.setItem('game', gameString);
+        }
+        return button;
+    }
 
     private populateButton(params: { actionKind: ActionsMenuOptionName }) {
         const button = document.createElement('button') as HTMLButtonElement;
@@ -21,6 +50,7 @@ class ActionMenuElement extends HTMLElement {
             [ActionsMenuOptionName.TrainsList]: this.onTrainsList,
             [ActionsMenuOptionName.Destroy]: this.onDestroy,
             [ActionsMenuOptionName.BuildTrain]: this.onBuildTrain,
+            [ActionsMenuOptionName.TrainSetRoute]: this.onSetRoute
         }
         button.onclick = handlersMap[actionKind];
         return button;
@@ -31,6 +61,9 @@ class ActionMenuElement extends HTMLElement {
     private listTrainsBtn: HTMLButtonElement = this.populateButton({ actionKind: ActionsMenuOptionName.TrainsList });
     private destroyBtn: HTMLButtonElement = this.populateButton({ actionKind: ActionsMenuOptionName.Destroy });
     private buildTrainBtn: HTMLButtonElement = this.populateButton({ actionKind: ActionsMenuOptionName.Destroy });
+    private sgButton: HTMLAnchorElement = this.styleguideButton();
+    private saveButton: HTMLButtonElement = this.populateSaveButton();
+
 
     constructor() {
         super();
@@ -107,11 +140,17 @@ class ActionMenuElement extends HTMLElement {
         }
     }
 
+    onSetRoute() {
+
+    }
+
     connectedCallback() {
         this.appendChild(this.buildRailwayBtn)
         this.appendChild(this.buildBuildingBtn)
         this.appendChild(this.listTrainsBtn)
-        this.appendChild(this.destroyBtn)
+        this.appendChild(this.destroyBtn);
+        this.appendChild(this.sgButton);
+        this.appendChild(this.saveButton);
     }
 
 }

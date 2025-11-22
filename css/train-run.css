@@ -6,7 +6,6 @@ train-run-element {
     box-sizing: border-box;
     top: 0;
     left: 0;
-    z-index: 10;
 }
 
 train-run-element.from-top {

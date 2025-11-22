@@ -38,7 +38,7 @@ class TrainRunElement extends HTMLElement {
     })();
 
     private trainEl = (() => {
-        const el = document.createElement('div');
+        const el = document.createElement('train-atom');
         el.classList.add('train');
         return el;
     })();
@@ -47,13 +47,15 @@ class TrainRunElement extends HTMLElement {
         super();
         this.setRoute = this.setRoute.bind(this);
         this.render = this.render.bind(this);
+
+
     }
 
     color: string = 'purple';
 
     setColor(c: string) {
         this.color = c;
-        this.trainEl.style.backgroundColor = this.color;
+        this.trainEl.setAttribute('data-color', c)
     }
 
     setRoute(params: { from: Direction | null, to: Direction | null }) {
@@ -67,6 +69,7 @@ class TrainRunElement extends HTMLElement {
 
         if (this.from && this.to) {
             this.classList.add(`from-${this.from}`);
+            this.trainEl.classList.add('--moving');
 
             if (DirectionUtils.isTurnLeft(this.from, this.to)) {
                 this.appendChild(this.turnLeftRouteEl);
@@ -98,6 +101,7 @@ class TrainRunElement extends HTMLElement {
             this.appendChild(this.stopEl);
             this.stopEl.classList.add(`from-${this.from}`);
             this.stopEl.appendChild(this.trainEl);
+            this.trainEl.classList.remove('--moving');
         }
 
         if (this.to && !this.from) {
@@ -105,6 +109,7 @@ class TrainRunElement extends HTMLElement {
             this.appendChild(this.startEl);
             this.startEl.classList.add(`from-${DirectionUtils.OpositeDirection[this.to]}`);
             this.startEl.appendChild(this.trainEl);
+            this.trainEl.classList.add('--moving');
         }
     }
 

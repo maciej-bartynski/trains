@@ -1,7 +1,6 @@
 import ActionsMenuService from "#src/service/ActionsMenuService/ActionsMenuService.js";
 import actionsMenuService from "#src/service/ActionsMenuService/index.js";
 import ActionsMenuOptionName from "#src/service/ActionsMenuService/types.js";
-import pointerOperations from "#src/service/PointerOperations/PointerOperations.js";
 import BuildingKind from "#src/types/BuildingKind.js";
 import Direction from "#src/types/Direction.js";
 import Orientation, { OrientationSquareVariant } from "#src/types/Orientation.js";
@@ -19,7 +18,7 @@ class MenuBottomElement extends HTMLElement {
     private operationElement: HTMLDivElement = document.createElement('div');
     private operationImage: HTMLImageElement = document.createElement('img');
     private titleElement: HTMLHeadingElement = document.createElement('h2');
-    private wrapper: HTMLElement = document.createElement('aside');
+    private closeButton: HTMLButtonElement = document.createElement('button');
     private kind: HTMLSpanElement = document.createElement('span');
     private directions: HTMLSpanElement = document.createElement('span');
     private orientation: HTMLSpanElement = document.createElement('span');
@@ -58,6 +57,7 @@ class MenuBottomElement extends HTMLElement {
     connectedCallback() {
         this.innerHTML = `
             <aside class="menu-buildings">
+                <button class="close-button box-secondary"></button>
                 <div class="menu-buildings_selected-building">
                     <div class="menu-buildings_preview">
                         <img class="menu-buildings_preview-image" alt="" />
@@ -81,7 +81,7 @@ class MenuBottomElement extends HTMLElement {
         this.operationElement = this.querySelector('div.menu-buildings_preview') as HTMLDivElement;
         this.operationImage = this.querySelector('img.menu-buildings_preview-image') as HTMLImageElement;
         this.titleElement = this.querySelector('h2') as HTMLHeadingElement;
-        this.wrapper = this.querySelector('aside') as HTMLElement;
+        this.closeButton = this.querySelector('button.close-button') as HTMLButtonElement;
         this.kind = this.querySelector('.menu-buildings_kind') as HTMLSpanElement;
         this.directions = this.querySelector('.menu-buildings_directions') as HTMLSpanElement;
         this.orientation = this.querySelector('.menu-buildings_orientation') as HTMLSpanElement;
@@ -89,6 +89,8 @@ class MenuBottomElement extends HTMLElement {
         this.rightNode = this.querySelector('.menu-buildings_preview-node[data-right]') as HTMLDivElement;
         this.bottomNode = this.querySelector('.menu-buildings_preview-node[data-bottom]') as HTMLDivElement;
         this.leftNode = this.querySelector('.menu-buildings_preview-node[data-left]') as HTMLDivElement;
+
+        this.closeButton.onclick = actionsMenuService.onClear
     }
 
     constructor() {
@@ -179,11 +181,11 @@ class MenuBottomElement extends HTMLElement {
         }
 
         if (currentAction === ActionsMenuOptionName.BuildBuilding || currentAction === ActionsMenuOptionName.BuildRailway) {
-            this.wrapper.style.bottom = '0px';
+            this.style.transform = 'translateY(0px)';
             this.operationElement.appendChild(this.operationImage)
         } else {
             this.titleElement.innerText = 'Select option'
-            this.wrapper.style.bottom = '-100%';
+            this.style.transform = 'translateY(calc(100% + 50px))';
             this.operationImage.remove();
         }
 

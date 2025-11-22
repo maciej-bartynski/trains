@@ -1,0 +1,99 @@
+.menu-trains-dialog {
+    width: 100%;
+    max-width: 600px;
+    padding: 10px;
+    border-radius: 10px;
+}
+
+.menu-trains-dialog .close-button {
+    margin-left: auto;
+}
+
+.menu-trains-dialog .field-preview {
+    display: flex;
+    flex-direction: column;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: flex-start;
+    height: 100px;
+    width: 100px;
+}
+
+.field-preview [data-selector="field-preview_field"] {
+    width: 100px;
+    height: 100px;
+    margin-right: 16px;
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.field-preview [data-selector] {
+    font-size: 10px;
+    color: white;
+    display: block;
+    line-height: 16px;
+    white-space: nowrap;
+}
+
+.field-preview [data-selector="field-preview_kind"] {
+    font-size: 12px;
+    font-weight: bolder;
+    margin-bottom: 6px;
+}
+
+.field-preview [data-selector="field-preview_orientation"],
+.field-preview [data-selector="field-preview_address"] {
+    text-transform: capitalize;
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+
+.indicator-address {
+    width: 10px;
+    height: 10px;
+    background-color: var(--tertiary);
+    border-radius: 2px;
+    border: solid 1px black;
+    position: relative;
+}
+
+.indicator-address::after,
+.indicator-address::before {
+    content: "";
+    width: 1px;
+    height: 18px;
+    background-color: black;
+    position: absolute;
+    left: -1px;
+    top: -6px;
+}
+
+.indicator-address::before {
+    left: -6px;
+    top: -1px;
+    width: 18px;
+    height: 1px;
+}
+
+.build-train-wrapper {
+    height: 100px;
+    padding-left: 20px;
+}
+
+.train-name {
+    font-size: 10px;
+    color: var(--tertiary);
+}
+
+.set-route {
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-size: 10px;
+    cursor: pointer;
+    margin-left: auto;
+}
+
+.set-route:hover {
+    filter: brightness(1.2);
+}

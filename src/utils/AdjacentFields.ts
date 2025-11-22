@@ -1,5 +1,5 @@
 import Config from "#src/config.js";
-import gameBoard from "#src/GameBoard.js";
+import GameBoard from "#src/GameBoard.js";
 import FieldModel from "#src/models/FieldModel.js";
 import Address from "#src/types/Address.js";
 import Diagonal from "#src/types/Diagonal.js";
@@ -125,7 +125,7 @@ const getAdjacentFields = (params: {
     };
 
     Object.entries(adjacentAddresses).forEach(([position, address]) => {
-        const field = address ? gameBoard.fields[AddressUtils.toKey(address)] : undefined;
+        const field = address ? GameBoard.getInstance().fields[AddressUtils.toKey(address)] : undefined;
         adjacentFields[position as keyof typeof adjacentFields] = field;
     });
     return adjacentFields;
@@ -154,7 +154,7 @@ const getDiagonalFields = (params: {
     };
 
     Object.entries(diagonalAddresses).forEach(([diagonal, address]) => {
-        const field = address ? gameBoard.fields[AddressUtils.toKey(address)] : undefined;
+        const field = address ? GameBoard.getInstance().fields[AddressUtils.toKey(address)] : undefined;
         diagonalFields[diagonal as keyof typeof diagonalFields] = field;
     });
 

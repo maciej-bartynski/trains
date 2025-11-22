@@ -1,3 +1,4 @@
+import GameFieldElement from "./components/GameFieldElement/GameFieldElement.js";
 import FieldModel from "./models/FieldModel.js";
 import TrainModel from "./models/TrainModel.js";
 import Address from "./types/Address.js";
@@ -8,6 +9,9 @@ import AdjacentFields from "./utils/AdjacentFields.js";
 
 interface GameBoardState {
     fields: Record<string, FieldModel>;
+    trains: Record<string, TrainModel>;
+    furthestRow: number;
+    furthestColumn: number;
 }
 
 type GameBoardListener = (params: GameBoard) => void;
@@ -20,6 +24,10 @@ class GameBoard implements GameBoardState {
 
     private _trains: Record<string, TrainModel> = {};
 
+    private _furthestRow: number = 0;
+
+    private _furthestColumn: number = 0;
+
     public get trains() {
         return this._trains;
     }
@@ -28,10 +36,32 @@ class GameBoard implements GameBoardState {
         return this._fields;
     }
 
-    constructor(params: GameBoardState) {
+    public get furthestRow() {
+        return this._furthestRow;
+    }
+
+    public get furthestColumn() {
+        return this._furthestColumn;
+    }
+
+    public get state() {
+        return {
+            fields: this._fields,
+            trains: this._trains,
+            furthestRow: this._furthestRow,
+            furthestColumn: this._furthestColumn
+        }
+    }
+
+    private constructor(params: GameBoardState) {
         Object.entries(params.fields).forEach(([key, field]) => {
             this._fields[key] = FieldModel.fromJSON(field);
         });
+        Object.entries(params.trains).forEach(([key, train]) => {
+            this._trains[key] = TrainModel.fromJSON(train);
+        });
+        this._furthestColumn = params.furthestColumn;
+        this._furthestRow = params.furthestRow;
         this.onBuild = this.onBuild.bind(this);
     }
 
@@ -48,8 +78,8 @@ class GameBoard implements GameBoardState {
         return this._fields[AddressUtils.toKey(address)];
     }
 
-    public getFieldElement(address: Address) {
-        return document.querySelector(`[data-key="${AddressUtils.toKey(address)}"]`)
+    public getFieldElement(address: Address): GameFieldElement {
+        return document.querySelector(`${GameFieldElement.componentName}[data-key="${AddressUtils.toKey(address)}"]`) as GameFieldElement
     }
 
     public setField(address: Address) {
@@ -58,6 +88,11 @@ class GameBoard implements GameBoardState {
         }
         const newField = FieldModel.touch(address);
         this._fields[AddressUtils.toKey(address)] = newField;
+        this._notifyListeners();
+    }
+
+    private setUpField(address: Address, field: FieldModel) {
+        this._fields[AddressUtils.toKey(address)] = field;
         this._notifyListeners();
     }
 
@@ -96,6 +131,17 @@ class GameBoard implements GameBoardState {
                 }
             }
         });
+
+        Object.values({
+            ...adjacentAddresses,
+            'center': existingField.address
+        }).forEach(address => {
+            if (address) {
+                this._furthestColumn = address.column > this._furthestColumn ? address.column : this._furthestColumn;
+                this._furthestRow = address.row > this._furthestRow ? address.row : this._furthestRow;
+            }
+        })
+
         this._notifyListeners();
     }
 
@@ -115,21 +161,47 @@ class GameBoard implements GameBoardState {
         this._listeners.forEach(listener => listener(this));
     }
 
-    public toJSON(): GameBoardState {
-        return JSON.parse(JSON.stringify({
-            ...this
-        }));
+    public toJSON(): any {
+        return JSON.parse(JSON.stringify(this.state));
     }
 
     static fromJSON(json: GameBoardState) {
-        return new GameBoard(json);
+        const listeners = [...GameBoard.instance._listeners];
+        GameBoard.instance = new GameBoard(json);
+        GameBoard.instance._listeners = listeners;
+        GameBoard.instance._notifyListeners();
+        Object.entries(GameBoard.instance.fields).forEach(fieldEntry => {
+            const [stringAddress, fieldModelData] = fieldEntry;
+            const address = AddressUtils.fromKey(stringAddress);
+            const fieldModel = FieldModel.fromJSON(fieldModelData);
+            if (address) {
+                GameBoard.instance.setUpField(address, fieldModel);
+                fieldModel.subscribe(GameBoard.instance.onBuild)
+            }
+        });
+        GameBoard.instance._notifyListeners();
+        Object.entries(GameBoard.instance._trains).forEach(train => {
+            const [trainId, trainModelData] = train;
+            const trainModel = TrainModel.fromJSON(trainModelData);
+            GameBoard.instance.setTrain(trainModel);
+        });
+        GameBoard.instance._notifyListeners();
+    }
+
+    static instance: GameBoard;
+    static getInstance() {
+        if (!GameBoard.instance) {
+            GameBoard.instance = new GameBoard({
+                fields: {},
+                trains: {},
+                furthestRow: 0,
+                furthestColumn: 0
+            });
+        }
+        return GameBoard.instance
     }
 }
 
-const gameBoard = new GameBoard({
-    fields: {},
-});
-
-export default gameBoard;
+export default GameBoard;
 
 export { GameBoard };

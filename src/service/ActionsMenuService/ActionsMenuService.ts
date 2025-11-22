@@ -1,6 +1,8 @@
+import Address from "#src/types/Address.js";
 import BuildingKind from "#src/types/BuildingKind.js";
 import Orientation, { OrientationSquareVariant } from "#src/types/Orientation.js";
-import ActionsMenuOptionName, { ActionsMenuOption, BuildBuildingOption, BuildRailwayOption } from "./types.js";
+import TrainRouteEvent from "#src/types/TrainTrespassingEvent.js";
+import ActionsMenuOptionName, { ActionsMenuOption, BuildBuildingOption, BuildRailwayOption, TrainSetRouteOption } from "./types.js";
 
 class ActionsMenuService {
 
@@ -33,6 +35,7 @@ class ActionsMenuService {
         this.onBuildBuildingOption = this.onBuildBuildingOption.bind(this);
         this.onTrainsListOption = this.onTrainsListOption.bind(this);
         this.onDestroyOption = this.onDestroyOption.bind(this);
+        this.onTrainSetRoute = this.onTrainSetRoute.bind(this);
         this.onClear = this.onClear.bind(this);
     }
 
@@ -80,12 +83,44 @@ class ActionsMenuService {
         })
     }
 
+    onTrainGarageOption(params: {
+        address: Address
+    }) {
+        this.setState({
+            action: {
+                type: ActionsMenuOptionName.BuildTrain,
+                payload: {
+                    address: params.address
+                }
+            }
+        })
+    }
+
     onTrainsListOption() {
         this.setState({
             action: {
                 type: ActionsMenuOptionName.TrainsList
             }
         })
+    }
+
+    onTrainSetRoute(params: { trainId: string, route?: TrainRouteEvent[] }) {
+        let nextRoutes: undefined | Array<TrainRouteEvent[]> = undefined;
+        if (params.route) {
+            const currentState = (this.state.action as TrainSetRouteOption);
+            nextRoutes = [...(currentState?.payload?.routes ?? []), params.route];
+        }
+
+        this.setState({
+            action: {
+                type: ActionsMenuOptionName.TrainSetRoute,
+                payload: {
+                    trainId: params.trainId,
+                    routes: nextRoutes
+                }
+            }
+        });
+
     }
 
     onDestroyOption() {

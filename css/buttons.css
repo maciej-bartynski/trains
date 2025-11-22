@@ -1,0 +1,27 @@
+button.box-primary {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    font-size: 12px;
+    cursor: pointer;
+    border-radius: 6px;
+    outline: none;
+    cursor: pointer;
+    padding: 3px 8px 3px 8px;
+    line-height: 16px;
+}
+
+button:hover.box-primary {
+    filter: brightness(1.2);
+}
+
+button:active.box-primary {
+    filter: brightness(2);
+}
+
+button.box-primary span {
+    white-space: nowrap;
+    padding: 0 0 0 6px;
+    font-size: 12px;
+    line-height: 16px;
+}

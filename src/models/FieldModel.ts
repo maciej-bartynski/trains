@@ -6,9 +6,8 @@ import Direction from "#src/types/Direction.js";
 import FieldVisibility from "#src/types/FieldVisibility.js";
 import Orientation, { OrientationHorizontal, OrientationSquare, OrientationSquareVariant, OrientationVertical } from "#src/types/Orientation.js";
 import TerrainKind from "#src/types/TerrainKind.js";
-import TrainRouteEvent from "#src/types/TrainTrespassingEvent";
+import TrainRouteEvent from "#src/types/TrainTrespassingEvent.js";
 import TrainTrespassingLight from "#src/types/TrainTresspasingLight.js";
-import AddressUtils from "#src/utils/AddressUtils.js";
 import AdjacentFields from "#src/utils/AdjacentFields.js";
 import Terrain from "#src/utils/Terrain.js";
 
@@ -81,6 +80,21 @@ class FieldModel implements FieldState {
         return this._events;
     }
 
+    get state(): FieldState {
+        return {
+            address: this._address,
+            constructionSite: this._constructionSite,
+            visibility: this._visibility,
+            terrain: this._terrain,
+            terrainImageNumber: this._terrainImageNumber,
+            terrainImageRotation: this._terrainImageRotation,
+            railwayOrientation: this._railwayOrientation,
+            railwayOrientationSquareVariant: this._railwayOrientationSquareVariant,
+            building: this._building,
+            events: this._events,
+        }
+    }
+
     private _listeners: FieldListener[] = [];
 
     public unsubscribe(listener: FieldListener) {
@@ -109,6 +123,7 @@ class FieldModel implements FieldState {
         this._railwayOrientationSquareVariant = params.railwayOrientationSquareVariant;
         this._building = params.building;
         this._events = params.events;
+        this._constructionSite = params.constructionSite;
 
         this.subscribe = this.subscribe.bind(this);
         this.unsubscribe = this.unsubscribe.bind(this);
@@ -287,13 +302,8 @@ class FieldModel implements FieldState {
 
 
         if (this._building === BuildingKind.RailwayStation) {
-            const isUpgrade = this._railwayOrientationSquareVariant === null && nextOrientationIsSquare;
+            const isUpgrade = Object.values(this._railwayOrientation).filter(value => value).length === 2 && nextOrientationIsSquare;
             if (isUpgrade) {
-                return true;
-            }
-
-            const isCrossDirection = Object.values(this._railwayOrientation).filter(value => value).length === 2 && Object.values(nextOrientation).filter(value => value).length === 4;
-            if (isCrossDirection) {
                 return true;
             }
 
@@ -512,9 +522,7 @@ class FieldModel implements FieldState {
     }
 
     public toJSON(): FieldState {
-        return JSON.parse(JSON.stringify({
-            ...this
-        }));
+        return JSON.parse(JSON.stringify(this.state));
     }
 }
 

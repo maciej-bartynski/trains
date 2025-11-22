@@ -1,0 +1,115 @@
+train-atom {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    width: 25px;
+    height: 16px;
+    --light-color: var(--indicator-blue);
+    --train-color: rgb(23, 11, 104);
+}
+
+.train-atom_light {
+    display: none;
+    position: absolute;
+    border-radius: 2px;
+    background-color: white;
+    filter: brightness(1.5);
+    box-shadow: 0 0 6px 6px var(--light-color);
+    top: 6px;
+    bottom: 6px;
+    right: -4px;
+    left: calc(100% - 4px);
+}
+
+.train-atom_car {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    background-color: var(--train-color);
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    box-shadow: 0 0 2px 2px rgba(0, 0, 0, .5);
+}
+
+.train-atom_car::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: -1px;
+    bottom: -1px;
+    right: calc(100% - 10px);
+    background-color: var(--train-color);
+    border-radius: 2px 0 0 2px;
+}
+
+.train-atom_car::before {
+    content: "";
+    top: 4px;
+    bottom: 4px;
+    right: -2px;
+    left: calc(100% - 4px);
+    background-color: var(--train-color);
+    position: absolute;
+}
+
+.train-atom_indicator {
+    width: calc(100% - 14px);
+    height: calc(100% - 4px);
+    background-color: var(--light-color);
+    margin-right: 4px;
+    border-radius: 0 4px 4px 0;
+    position: relative;
+    overflow: hidden;
+    box-shadow: inset 0 0 4px 0px black;
+}
+
+.train-atom_indicator::after {
+    content: "";
+    display: block;
+    width: 30%;
+    max-width: 20px;
+    height: calc(100% - 4px);
+    position: absolute;
+    top: 2px;
+    right: 0;
+    background-color: var(--light-color);
+    border-radius: 2px;
+    box-shadow: 0 0 2px 0px black;
+}
+
+@keyframes engine-moving {
+    from {
+        left: 0;
+        transform: translate(0);
+    }
+
+    50% {
+        left: 100%;
+        transform: translate(-100%);
+    }
+
+    to {
+        left: 0;
+        transform: translate(0);
+    }
+}
+
+train-atom.--moving .train-atom_indicator {
+    filter: brightness(1.6);
+}
+
+train-atom.--moving .train-atom_indicator::after {
+    filter: brightness(1.3);
+    animation: engine-moving ease-in-out 550ms infinite;
+}
+
+train-atom.--moving .train-atom_light {
+    display: block;
+}
+
+train-atom.--presentation .train-atom_car {
+    box-shadow: none;
+}
