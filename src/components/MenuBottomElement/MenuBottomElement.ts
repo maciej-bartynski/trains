@@ -255,6 +255,4 @@ class MenuBottomElement extends HTMLElement {
     }
 }
 
-// customElements.define(MenuBottomElement.componentName, MenuBottomElement);
-
 export default MenuBottomElement;

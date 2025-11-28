@@ -12,58 +12,58 @@ import AdjacentFields from "./AdjacentFields.js";
 
 const areFieldRailwaysConnected = (fieldA: FieldModel, fieldB: FieldModel) => {
 
-    if (!listFieldRailwayDirections(fieldA.railwayOrientation).length || !listFieldRailwayDirections(fieldB.railwayOrientation).length) {
+    if (!listFieldRailwayDirections(fieldA.state.railwayOrientation).length || !listFieldRailwayDirections(fieldB.state.railwayOrientation).length) {
         return false;
     }
 
     let departureDirection: Direction | null = null;
     let arrivalDirection: Direction | null = null;
-    const adjacentToFieldA = AdjacentFields.getAdjacentFields({ address: fieldA.address });
+    const adjacentToFieldA = AdjacentFields.getAdjacentFields({ address: fieldA.state.address });
     Object
         .entries(adjacentToFieldA)
         .forEach(entry => {
             const [direction, field] = entry as [Direction, FieldModel | undefined];
             if (
                 field &&
-                AddressUtils.isAddressEqual(field.address, fieldB.address) &&
-                fieldB.railwayOrientation[OpositeDirection[direction]] &&
-                fieldA.railwayOrientation[direction]
+                AddressUtils.isAddressEqual(field.state.address, fieldB.state.address) &&
+                fieldB.state.railwayOrientation[OpositeDirection[direction]] &&
+                fieldA.state.railwayOrientation[direction]
             ) {
                 departureDirection = direction;
                 arrivalDirection = OpositeDirection[direction];
             }
         })
 
-    return departureDirection && arrivalDirection && fieldB.railwayOrientation[arrivalDirection]
+    return departureDirection && arrivalDirection && fieldB.state.railwayOrientation[arrivalDirection]
 }
 
 const isDeadEnd = (field: FieldModel) => {
-    const isDeadEnd = Object.values(field.railwayOrientation).filter(item => item).length === 1;
-    return isDeadEnd && field.building === BuildingKind.RailwayTrack;
+    const isDeadEnd = Object.values(field.state.railwayOrientation).filter(item => item).length === 1;
+    return isDeadEnd && field.state.building === BuildingKind.RailwayTrack;
 }
 
 const isRouteEnd = (field: FieldModel) => {
     const deadEnd = isDeadEnd(field);
-    const isStation = field.building === BuildingKind.RailwayStation;
-    const isGarage = field.building === BuildingKind.RailwayGarage;
+    const isStation = field.state.building === BuildingKind.RailwayStation;
+    const isGarage = field.state.building === BuildingKind.RailwayGarage;
     const isRoutePartEnd = deadEnd || isStation || isGarage;
     return isRoutePartEnd;
 }
 
 const isTShape = (field: FieldModel) => {
-    const isTShape = Object.values(field.railwayOrientation).filter(item => item).length === 3;
-    const isRailway = field.building === BuildingKind.RailwayTrack;
+    const isTShape = Object.values(field.state.railwayOrientation).filter(item => item).length === 3;
+    const isRailway = field.state.building === BuildingKind.RailwayTrack;
     return isTShape && isRailway;
 }
 
 const isXShape = (field: FieldModel) => {
-    const isXShape = Object.values(field.railwayOrientation).filter(item => item).length === 4;
-    const isRailway = field.building === BuildingKind.RailwayTrack;
+    const isXShape = Object.values(field.state.railwayOrientation).filter(item => item).length === 4;
+    const isRailway = field.state.building === BuildingKind.RailwayTrack;
     return isXShape && isRailway;
 }
 
 const isTurnable = (field: FieldModel) => {
-    return field.railwayOrientationSquareVariant === OrientationSquareVariant.Intersection;
+    return field.state.railwayOrientationSquareVariant === OrientationSquareVariant.Intersection;
 }
 
 const isJunctionTurnable = (field: FieldModel) => {
@@ -71,7 +71,7 @@ const isJunctionTurnable = (field: FieldModel) => {
 }
 
 const isSingleOrientation = (field: FieldModel) => {
-    const isBidirectional = Object.values(field.railwayOrientation).filter(item => item).length === 2;
+    const isBidirectional = Object.values(field.state.railwayOrientation).filter(item => item).length === 2;
     const isNonTurnableCrossing = isXShape(field) && !isTurnable(field);
     return isBidirectional || isNonTurnableCrossing;
 }
@@ -100,7 +100,7 @@ const nextEventWithDeadEndAssumption = (events: (TrainTrespassingEvent | TrainDe
         }
 
         const currentField = GameBoard.getInstance().getField(nextAddress);
-        const fieldEventsCost = (currentField?.events.length ?? 0);
+        const fieldEventsCost = (currentField?.state.events.length ?? 0);
         const fieldTresspassingCost = 1;
         return {
             light: TrainTrespassingLight.Red,
@@ -142,13 +142,13 @@ const listFieldRailwayDirections = (orientation: Orientation): Direction[] => {
  */
 const getFirstAvailableDepartureDirection = (eventTemplate: TrainRouteEvent, field: FieldModel): Direction | null | undefined => {
 
-    if (countFieldRailwayDirections(field.railwayOrientation) === 0) {
+    if (countFieldRailwayDirections(field.state.railwayOrientation) === 0) {
         /** Error, field not connected */
         return undefined
     }
 
     if (eventTemplate.from === null) {
-        const firstAvailableDirection = listFieldRailwayDirections(field.railwayOrientation)[0];
+        const firstAvailableDirection = listFieldRailwayDirections(field.state.railwayOrientation)[0];
         if (firstAvailableDirection) {
             /** Departure - route starts */
             return firstAvailableDirection
@@ -158,12 +158,12 @@ const getFirstAvailableDepartureDirection = (eventTemplate: TrainRouteEvent, fie
         }
     } else {
 
-        if (field.building === BuildingKind.RailwayGarage || field.building === BuildingKind.RailwayStation) {
+        if (field.state.building === BuildingKind.RailwayGarage || field.state.building === BuildingKind.RailwayStation) {
             /** Station or Garage - route ends */
             return null;
         }
 
-        if (field.building === BuildingKind.RailwayTrack && (countFieldRailwayDirections(field.railwayOrientation) === 1)) {
+        if (field.state.building === BuildingKind.RailwayTrack && (countFieldRailwayDirections(field.state.railwayOrientation) === 1)) {
             /** Dead end - route ends*/
             return null
         }
@@ -172,17 +172,17 @@ const getFirstAvailableDepartureDirection = (eventTemplate: TrainRouteEvent, fie
 
         if (isNonTurnableCrossing) {
             const oppositeToArrival = OpositeDirection[eventTemplate.from];
-            const isAvailable = field.railwayOrientation[oppositeToArrival];
+            const isAvailable = field.state.railwayOrientation[oppositeToArrival];
             return isAvailable ? oppositeToArrival : undefined;
         }
 
         if (isSingleOrientation(field) && !isNonTurnableCrossing) {
 
-            return listFieldRailwayDirections(field.railwayOrientation).find(dir => dir !== eventTemplate.from);
+            return listFieldRailwayDirections(field.state.railwayOrientation).find(dir => dir !== eventTemplate.from);
         }
 
         if (isJunctionTurnable(field)) {
-            return listFieldRailwayDirections(field.railwayOrientation).find(dir => dir !== eventTemplate.from);
+            return listFieldRailwayDirections(field.state.railwayOrientation).find(dir => dir !== eventTemplate.from);
         }
 
         return undefined;
@@ -235,7 +235,7 @@ const performAStarRouteSearching = (train: {
     const pointB = train.destination ? GameBoard.getInstance().getField(train.destination) : null;
     if (!pointA || !pointB) return;
 
-    const _allRoutes: TrainRouteEvent[][] = listFieldRailwayDirections(pointA.railwayOrientation)
+    const _allRoutes: TrainRouteEvent[][] = listFieldRailwayDirections(pointA.state.railwayOrientation)
         .map(direction => {
             const route: NonEmptyArray<TrainDepartureEvent> = [
                 {
@@ -258,7 +258,7 @@ const performAStarRouteSearching = (train: {
     let routeFound: NonEmptyArray<TrainRouteEvent> | null = null;
 
     while (!routeFound) {
-        const currentRoute = getShortestRoute(allRoutes, pointB.address);
+        const currentRoute = getShortestRoute(allRoutes, pointB.state.address);
         const previousEvent = getLastRouteEvent(currentRoute) as (TrainDepartureEvent | TrainTrespassingEvent);
         const previousField = GameBoard.getInstance().getField(previousEvent.address);
         if (!previousField) {
@@ -273,7 +273,7 @@ const performAStarRouteSearching = (train: {
             }
         }
 
-        const routeFinishedNotInPointB = getLastRouteEvent(currentRoute).to === null && !AddressUtils.isAddressEqual(getLastRouteEvent(currentRoute).address, pointB.address);
+        const routeFinishedNotInPointB = getLastRouteEvent(currentRoute).to === null && !AddressUtils.isAddressEqual(getLastRouteEvent(currentRoute).address, pointB.state.address);
         if (routeFinishedNotInPointB) {
             const _allRoutesOrEmptyStack = deleteRouteFromRoutesStack(allRoutes, currentRoute);
             if (_allRoutesOrEmptyStack.length === 0) {
@@ -285,7 +285,7 @@ const performAStarRouteSearching = (train: {
             }
         }
 
-        const fieldsAdjacentToPrevious = AdjacentFields.getAdjacentFields(previousField);
+        const fieldsAdjacentToPrevious = AdjacentFields.getAdjacentFields(previousField.state);
         const currentField = fieldsAdjacentToPrevious[previousEvent.to];
         const currentFieldNotExistOrNotConnected = !currentField || !areFieldRailwaysConnected(previousField, currentField);
 
@@ -308,7 +308,7 @@ const performAStarRouteSearching = (train: {
         if (isRouteEnd(currentField)) {
             nextPossibleDepartureDirections = [null];
         } else {
-            nextPossibleDepartureDirections = listFieldRailwayDirections(currentField.railwayOrientation)
+            nextPossibleDepartureDirections = listFieldRailwayDirections(currentField.state.railwayOrientation)
                 .filter(deartureDirection => {
                     const isTurningAround = deartureDirection === currentEventArriveFrom;
                     if (isTurningAround) {
@@ -316,7 +316,7 @@ const performAStarRouteSearching = (train: {
                     }
 
                     const isDuplicatedEvent = currentRoute.some(event => {
-                        return AddressUtils.isAddressEqual(event.address, currentField.address) && event.to === deartureDirection;
+                        return AddressUtils.isAddressEqual(event.address, currentField.state.address) && event.to === deartureDirection;
                     });
 
                     if (isDuplicatedEvent) {
@@ -347,13 +347,13 @@ const performAStarRouteSearching = (train: {
         }
 
         const nextPossibleRouteClones = nextPossibleDepartureDirections.map((nextDirection) => {
-            const fieldEventsCost = (currentField.events.length ?? 0);
+            const fieldEventsCost = (currentField.state.events.length ?? 0);
             const fieldTresspassingCost = 1;
             const currentRouteClone: NonEmptyArray<TrainRouteEvent> = [
                 ...currentRoute,
                 {
                     light: TrainTrespassingLight.Red,
-                    address: currentField.address,
+                    address: currentField.state.address,
                     from: currentEventArriveFrom,
                     to: nextDirection,
                     durationMiliseconds: 1000,
@@ -368,7 +368,7 @@ const performAStarRouteSearching = (train: {
 
         routeFound = nextPossibleRouteClones.find(route => {
             const lastEvent = getLastRouteEvent(route);
-            return AddressUtils.isAddressEqual(lastEvent.address, pointB.address);
+            return AddressUtils.isAddressEqual(lastEvent.address, pointB.state.address);
         }) ?? null;
     }
 
@@ -378,7 +378,7 @@ const performAStarRouteSearching = (train: {
 
 const findAllRoutes = async (train: TrainModel) => {
 
-    const departureFrom = GameBoard.getInstance().getField(train.location);
+    const departureFrom = GameBoard.getInstance().getField(train.state.location);
     const routes: TrainRouteEvent[][] = [];
 
     const iterateDirections = (params: { route: (TrainDepartureEvent | TrainTrespassingEvent)[] }) => {
@@ -401,7 +401,7 @@ const findAllRoutes = async (train: TrainModel) => {
 
         const nextField = adjacentFields[lastEventTo];
 
-        if (!nextField || !listFieldRailwayDirections(nextField.railwayOrientation).length) {
+        if (!nextField || !listFieldRailwayDirections(nextField.state.railwayOrientation).length) {
             /** Track not finished - dead end. Not a route part. */
             return;
         }
@@ -430,7 +430,7 @@ const findAllRoutes = async (train: TrainModel) => {
                 return;
             }
             const notYetFinishedRoute: (TrainDepartureEvent | TrainTrespassingEvent)[] = [...route];
-            Object.entries(nextField.railwayOrientation).forEach(entry => {
+            Object.entries(nextField.state.railwayOrientation).forEach(entry => {
 
                 const iterableCopyOfRoute: (TrainDepartureEvent | TrainTrespassingEvent)[] = [...notYetFinishedRoute];
                 const [direction, hasRailway] = entry as [Direction, boolean];
@@ -474,7 +474,7 @@ const findAllRoutes = async (train: TrainModel) => {
 
     if (departureFrom) {
 
-        Object.entries(departureFrom.railwayOrientation).forEach((entry) => {
+        Object.entries(departureFrom.state.railwayOrientation).forEach((entry) => {
 
             const [direction, hasRailway] = entry as [Direction, boolean];
 
@@ -482,7 +482,7 @@ const findAllRoutes = async (train: TrainModel) => {
                 const route: TrainDepartureEvent[] = [
                     {
                         light: TrainTrespassingLight.Red,
-                        address: train.location,
+                        address: train.state.location,
                         from: null,
                         to: direction,
                         durationMiliseconds: 1000,

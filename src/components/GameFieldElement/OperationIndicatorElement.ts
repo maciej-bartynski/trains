@@ -62,15 +62,15 @@ class OperationIndicatorElement extends HTMLElement {
                 : null;
             const location = lastDesination
                 ? lastDesination.address
-                : currentTrain.location;
+                : currentTrain.state.location;
             const routeParams = {
                 location,
-                destination: currentField.address,
+                destination: currentField.state.address,
             }
             const route = Pathfinder.performAStarRouteSearching(routeParams);
             if (!route) return;
             actionsMenuService.onTrainSetRoute({
-                trainId: currentTrain.id,
+                trainId: currentTrain.state.id,
                 route
             })
         }
@@ -91,13 +91,13 @@ class OperationIndicatorElement extends HTMLElement {
                 this.removeEventListener('click', this.onSelectDestination)
                 return;
             }
-            if (AddressUtils.isAddressEqual(currentTrain.location, this.address)) {
+            if (AddressUtils.isAddressEqual(currentTrain.state.location, this.address)) {
                 this.classList.remove('--can-go');
                 this.removeEventListener('click', this.onSelectDestination)
                 return;
             }
-            const isRouteEnd = currentField.building && currentField.building === BuildingKind.RailwayTrack && Object.values(currentField.railwayOrientation).filter(item => !!item).length === 1;
-            if (currentField.building && [BuildingKind.RailwayGarage, BuildingKind.RailwayStation].includes(currentField.building)) {
+            const isRouteEnd = currentField.state.building && currentField.state.building === BuildingKind.RailwayTrack && Object.values(currentField.state.railwayOrientation).filter(item => !!item).length === 1;
+            if (currentField.state.building && [BuildingKind.RailwayGarage, BuildingKind.RailwayStation].includes(currentField.state.building)) {
                 this.classList.add('--can-go');
                 this.addEventListener('click', this.onSelectDestination)
 
@@ -190,7 +190,5 @@ class OperationIndicatorElement extends HTMLElement {
         this.removeEventListener('mouseleave', this.onLeave);
     }
 }
-
-// customElements.define(OperationIndicatorElement.componentName, OperationIndicatorElement);
 
 export default OperationIndicatorElement;

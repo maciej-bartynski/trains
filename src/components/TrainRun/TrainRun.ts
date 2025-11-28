@@ -140,15 +140,15 @@ class TrainRunElement extends HTMLElement {
     static createTrainElement(params: {
         trainId: string
     }): TrainRunElement | void {
-        const train = GameBoard.getInstance().trains[params.trainId];
+        const train = GameBoard.getInstance().getTrain(params.trainId);
         if (train) {
             const trainAnimation = document.createElement(TrainRunElement.componentName) as TrainRunElement;
             trainAnimation.setRoute({
-                from: train.direction,
-                to: train.direction
+                from: train.state.direction,
+                to: train.state.direction
             });
             trainAnimation.setAttribute('data-train', params.trainId)
-            trainAnimation.setColor(train.randomColor);
+            trainAnimation.setColor(train.state.randomColor);
             return trainAnimation;
         }
     }

@@ -74,12 +74,12 @@ class GameFieldElement extends HTMLElement {
             [Direction.Left]: this.leftLightElement,
             [Direction.Right]: this.rightLightElement
         }
-        if (field.events[0] && (Object.values(field.railwayOrientation).filter(item => !!item).length > 2) && field.building === BuildingKind.RailwayTrack) {
-            Object.entries(field.railwayOrientation).forEach(entry => {
+        if (field.state.events[0] && (Object.values(field.state.railwayOrientation).filter(item => !!item).length > 2) && field.state.building === BuildingKind.RailwayTrack) {
+            Object.entries(field.state.railwayOrientation).forEach(entry => {
                 const [direction, hasRoute] = entry as [Direction, boolean];
                 if (hasRoute) {
 
-                    const event = field.events[0]!
+                    const event = field.state.events[0]!
                     const isGreenLight = event.from === direction;
 
                     if (isGreenLight) {
@@ -95,8 +95,8 @@ class GameFieldElement extends HTMLElement {
     }
 
     public appendTrainAnimation(params: { from: Direction | null, to: Direction | null, trainId: string }) {
-        const train = GameBoard.getInstance().trains[params.trainId];
-        const color = train?.randomColor ?? 'purple';
+        const train = GameBoard.getInstance().getTrain(params.trainId);
+        const color = train?.state.randomColor ?? 'purple';
 
         const prevAnimation = document.querySelector(`[data-train="${params.trainId}"]`);
         prevAnimation?.remove();
@@ -135,10 +135,10 @@ class GameFieldElement extends HTMLElement {
             return;
         }
 
-        if (field?.visibility === FieldVisibility.Ready && address) {
+        if (field?.state.visibility === FieldVisibility.Ready && address) {
             GameBoard.getInstance().uncoverField(address);
             FloatersService.getInstance().onNewAddressUncovered(address);
-        } else if ((field?.visibility === FieldVisibility.Visible) && address) {
+        } else if ((field?.state.visibility === FieldVisibility.Visible) && address) {
 
             const buildOperations: (ActionsMenuOptionName | undefined)[] = [
                 ActionsMenuOptionName.BuildBuilding,
@@ -188,8 +188,8 @@ class GameFieldElement extends HTMLElement {
                         break;
                     }
                 }
-            } else if (field.building === BuildingKind.RailwayGarage) {
-                actionsMenuService.onTrainGarageOption({ address: field.address });
+            } else if (field.state.building === BuildingKind.RailwayGarage) {
+                actionsMenuService.onTrainGarageOption({ address: field.state.address });
             }
         }
     }
@@ -199,14 +199,14 @@ class GameFieldElement extends HTMLElement {
             this.constructionProgressElement.remove();
             return;
         }
-        switch (field.constructionSite?.state) {
+        switch (field.state.constructionSite?.state) {
             case ConstructionState.Awaiting:
                 this.appendChild(this.constructionProgressElement);
                 break;
             case ConstructionState.Started:
                 break;
             case ConstructionState.InProgress:
-                this.constructionProgressElement.setProgress(Math.floor(field.constructionSite.progressPercentage ?? 0));
+                this.constructionProgressElement.setProgress(Math.floor(field.state.constructionSite.progressPercentage ?? 0));
                 break;
             case ConstructionState.Completed: {
                 this.constructionProgressElement.remove();
@@ -220,7 +220,7 @@ class GameFieldElement extends HTMLElement {
             this.operationIndicatorElement.remove();
             return;
         }
-        if (field.visibility === FieldVisibility.Visible && this.address) {
+        if (field.state.visibility === FieldVisibility.Visible && this.address) {
             this.layerOperationIndicatorElement.appendChild(this.operationIndicatorElement);
             this.operationIndicatorElement.setAddress(this.address);
         } else {
@@ -229,14 +229,14 @@ class GameFieldElement extends HTMLElement {
     }
 
     private renderTrackOrBuilding(field: FieldModel) {
-        if (field.constructionSite?.state === ConstructionState.Completed && field.building) {
-            const isTrackConstructed = field.building === BuildingKind.RailwayTrack;
-            const isBuildingConstructed = field.building && field.building !== BuildingKind.RailwayTrack;
+        if (field.state.constructionSite?.state === ConstructionState.Completed && field.state.building) {
+            const isTrackConstructed = field.state.building === BuildingKind.RailwayTrack;
+            const isBuildingConstructed = field.state.building && field.state.building !== BuildingKind.RailwayTrack;
 
             const nextBuildingImageSrc = BuildingOrientationUtils.orientationToImage({
-                kind: field.building,
-                orientation: field.railwayOrientation,
-                orientationSquareVariant: field.railwayOrientationSquareVariant
+                kind: field.state.building,
+                orientation: field.state.railwayOrientation,
+                orientationSquareVariant: field.state.railwayOrientationSquareVariant
             }) ?? "";
 
             const buildingAlreadyRendered = this.buildingElement.src.includes(nextBuildingImageSrc) && (
@@ -293,10 +293,10 @@ class GameFieldElement extends HTMLElement {
     private renderBackground(field: FieldModel) {
         const bgLayer = this.layerTerrainBgElement;
         const backgroundRendered = bgLayer.hasChildNodes()
-        if (!backgroundRendered && field.terrain && field.terrainImageNumber) {
+        if (!backgroundRendered && field.state.terrain && field.state.terrainImageNumber) {
             const bgImg = document.createElement('img');
-            bgImg.src = `images/terrain/${field.terrain}-${field.terrainImageNumber}.png`;
-            bgImg.style.transform = `rotate(${field.terrainImageRotation * 90}deg)`;
+            bgImg.src = `images/terrain/${field.state.terrain}-${field.state.terrainImageNumber}.png`;
+            bgImg.style.transform = `rotate(${field.state.terrainImageRotation * 90}deg)`;
             bgImg.style.width = '100%';
             bgImg.style.height = '100%';
             bgImg.style.objectFit = 'contain';
@@ -319,7 +319,7 @@ class GameFieldElement extends HTMLElement {
         this.style.top = `${(address.row * Config.cellSizePx) + FloatersService.getInstance().state.top}px`;
         this.style.width = `${Config.cellSizePx}px`;
         this.style.height = `${Config.cellSizePx}px`;
-        this.classList.add(`--${field.visibility}`);
+        this.classList.add(`--${field.state.visibility}`);
 
         if (this.presentationVariant) {
             this.style.position = 'relative';
@@ -342,7 +342,7 @@ class GameFieldElement extends HTMLElement {
         if (!field) {
             return;
         }
-        const adjacentFields = AdjacentFields.getAdjacentFields({ address: field.address });
+        const adjacentFields = AdjacentFields.getAdjacentFields({ address: field.state.address });
         adjacentFields.top?.subscribe(this.render);
         adjacentFields.bottom?.subscribe(this.render);
         adjacentFields.left?.subscribe(this.render);
@@ -420,7 +420,7 @@ const shouldRenderAdjacentTerrainEdge = (field: FieldModel) => {
 
     const terrainsThatCoverEdges: TerrainKind[] = [];
 
-    switch (field.terrain) {
+    switch (field.state.terrain) {
         case null:
         case TerrainKind.Desert:
         case TerrainKind.Ice:
@@ -437,17 +437,17 @@ const shouldRenderAdjacentTerrainEdge = (field: FieldModel) => {
             break;
     }
 
-    const adjacentFields = AdjacentFields.getAdjacentFields({ address: field.address });
+    const adjacentFields = AdjacentFields.getAdjacentFields({ address: field.state.address });
 
     const adjacentTerrainEdges = {
-        [Direction.Top]: (adjacentFields.top?.terrain && terrainsThatCoverEdges.includes(adjacentFields.top?.terrain))
-            ? adjacentFields.top.terrain : null,
-        [Direction.Bottom]: (adjacentFields.bottom?.terrain && terrainsThatCoverEdges.includes(adjacentFields.bottom?.terrain))
-            ? adjacentFields.bottom.terrain : null,
-        [Direction.Left]: (adjacentFields.left?.terrain && terrainsThatCoverEdges.includes(adjacentFields.left?.terrain))
-            ? adjacentFields.left.terrain : null,
-        [Direction.Right]: (adjacentFields.right?.terrain && terrainsThatCoverEdges.includes(adjacentFields.right?.terrain))
-            ? adjacentFields.right.terrain : null,
+        [Direction.Top]: (adjacentFields.top?.state.terrain && terrainsThatCoverEdges.includes(adjacentFields.top?.state.terrain))
+            ? adjacentFields.top.state.terrain : null,
+        [Direction.Bottom]: (adjacentFields.bottom?.state.terrain && terrainsThatCoverEdges.includes(adjacentFields.bottom?.state.terrain))
+            ? adjacentFields.bottom.state.terrain : null,
+        [Direction.Left]: (adjacentFields.left?.state.terrain && terrainsThatCoverEdges.includes(adjacentFields.left?.state.terrain))
+            ? adjacentFields.left.state.terrain : null,
+        [Direction.Right]: (adjacentFields.right?.state.terrain && terrainsThatCoverEdges.includes(adjacentFields.right?.state.terrain))
+            ? adjacentFields.right.state.terrain : null,
     }
 
     return adjacentTerrainEdges

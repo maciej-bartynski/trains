@@ -61,6 +61,4 @@ class BuildingButtonElement extends HTMLElement {
     }
 }
 
-// customElements.define(BuildingButtonElement.componentName, BuildingButtonElement);
-
 export default BuildingButtonElement;

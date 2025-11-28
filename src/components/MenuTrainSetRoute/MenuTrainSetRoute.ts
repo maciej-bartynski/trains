@@ -62,7 +62,7 @@ class MenuTrainSetRoute extends StatefullComponent<ElementState, ElementProps> {
 
         if (train) {
             this.style.display = 'block';
-            trainAtom?.setAttribute('data-color', train.randomColor);
+            trainAtom?.setAttribute('data-color', train.state.randomColor);
             this.desinationsList.innerHTML = '';
             props?.routes?.forEach(route => {
                 const destinationAddress = route[route.length - 1]?.address;
@@ -163,7 +163,5 @@ const innerHtmlText = `
         </section>
     </div>
 `;
-
-// customElements.define(MenuTrainSetRoute.componentName, MenuTrainSetRoute);
 
 export default MenuTrainSetRoute;

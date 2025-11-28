@@ -3,7 +3,6 @@ import Service from "./framework/Service/Service.js";
 import FieldModel from "./models/FieldModel.js";
 import TrainModel from "./models/TrainModel.js";
 import ActionsMenuService from "./service/ActionsMenuService/ActionsMenuService.js";
-import actionsMenuService from "./service/ActionsMenuService/index.js";
 import FloatersService from "./service/FloatersService/FloatersService.js";
 import Address from "./types/Address.js";
 import ConstructionState from "./types/ConstructionState.js";
@@ -21,7 +20,7 @@ interface GameBoardState {
 
 type GameBoardListener = (params: GameBoard) => void;
 
-class GameBoard implements GameBoardState {
+class GameBoard extends Service<GameBoardState> {
 
     static ServicesRegistry: {
         floaters: FloatersService,
@@ -37,69 +36,51 @@ class GameBoard implements GameBoardState {
         GameBoard.ServicesRegistry.actionsMenu = ActionsMenuService.getInstance();
     }
 
-    private _listeners: GameBoardListener[] = [];
-
-    private _fields: Record<string, FieldModel> = {};
-
-    private _trains: Record<string, TrainModel> = {};
-
-    private _furthestRow: number = 0;
-
-    private _furthestColumn: number = 0;
-
-    public get trains() {
-        return this._trains;
-    }
-
-    public get fields() {
-        return this._fields;
-    }
-
-    public get furthestRow() {
-        return this._furthestRow;
-    }
-
-    public get furthestColumn() {
-        return this._furthestColumn;
-    }
-
-    public get state() {
-        return {
-            fields: this._fields,
-            trains: this._trains,
-            furthestRow: this._furthestRow,
-            furthestColumn: this._furthestColumn
-        }
+    state: GameBoardState = {
+        fields: {},
+        trains: {},
+        furthestRow: 0,
+        furthestColumn: 0,
     }
 
     private constructor() {
+        super();
         this.onBuild = this.onBuild.bind(this);
     }
 
-    private configure(game: GameBoardState | null) {
+    private configure(game: {
+        fields: FieldModel,
+        trains: TrainModel['state'],
+        furthestColumn: number,
+        furthestRow: number,
+    } | null) {
         if (game) {
             Object.entries(game.fields).forEach(([key, field]) => {
-                this._fields[key] = FieldModel.fromJSON(field);
+                this.state.fields[key] = FieldModel.fromJSON(field);
             });
             Object.entries(game.trains).forEach(([key, train]) => {
-                this._trains[key] = TrainModel.fromJSON(train);
+                this.state.trains[key] = TrainModel.fromJSON(train);
             });
-            this._furthestColumn = game.furthestColumn;
-            this._furthestRow = game.furthestRow;
+            this.state.furthestColumn = game.furthestColumn;
+            this.state.furthestRow = game.furthestRow;
         }
     }
 
     public setTrain(train: TrainModel) {
-        this._trains[train.id] = train;
-        this._notifyListeners();
+        this.setState({
+            trains: {
+                ...this.state.trains,
+                [train.state.id]: train,
+            }
+        })
     }
 
     public getTrain(id: string) {
-        return this._trains[id];
+        return this.state.trains[id];
     }
 
     public getField(address: Address) {
-        return this._fields[AddressUtils.toKey(address)];
+        return this.state.fields[AddressUtils.toKey(address)];
     }
 
     public getFieldElement(address: Address): GameFieldElement {
@@ -107,15 +88,21 @@ class GameBoard implements GameBoardState {
     }
 
     public setField(address: Address) {
-        if (this._fields[AddressUtils.toKey(address)]) {
+        if (this.getField(address)) {
             return;
         }
+
         const newField = FieldModel.touch(address);
-        this._fields[AddressUtils.toKey(address)] = newField;
-        this._notifyListeners();
+
+        this.setState({
+            fields: {
+                ...this.state.fields,
+                [AddressUtils.toKey(address)]: newField
+            }
+        })
     }
 
-    public onBuild(state: FieldModel) {
+    public onBuild(state: FieldModel['state']) {
         if (state.constructionSite?.state === ConstructionState.Started) {
             const adjacentAddresses = AdjacentFields.getAdjacentAddresses({ address: state.address });
             Object.values(adjacentAddresses).forEach(address => {
@@ -123,7 +110,7 @@ class GameBoard implements GameBoardState {
                     const adjacentField = this.getField(address);
                     if (!adjacentField) {
                         this.setField(address);
-                    } else if (adjacentField?.visibility === FieldVisibility.Hidden || adjacentField?.visibility === FieldVisibility.Ready) {
+                    } else if (adjacentField?.state.visibility === FieldVisibility.Hidden || adjacentField?.state.visibility === FieldVisibility.Ready) {
                         adjacentField.uncover();
                         this.uncoverField(address)
                     }
@@ -133,7 +120,7 @@ class GameBoard implements GameBoardState {
     }
 
     public uncoverField(address: Address) {
-        const existingField = this._fields[AddressUtils.toKey(address)];
+        const existingField = this.getField(address);
         const adjacentAddresses = AdjacentFields.getAdjacentAddresses({ address: address });
         if (!existingField) {
             return;
@@ -146,38 +133,22 @@ class GameBoard implements GameBoardState {
                 const adjacentField = this.getField(address);
                 if (!adjacentField) {
                     const fieldTouched = FieldModel.touch(address);
-                    this._fields[AddressUtils.toKey(address)] = fieldTouched;
+                    this.state.fields[AddressUtils.toKey(address)] = fieldTouched;
                 }
             }
         });
 
         Object.values({
             ...adjacentAddresses,
-            'center': existingField.address
+            'center': existingField.state.address
         }).forEach(address => {
             if (address) {
-                this._furthestColumn = address.column > this._furthestColumn ? address.column : this._furthestColumn;
-                this._furthestRow = address.row > this._furthestRow ? address.row : this._furthestRow;
+                this.state.furthestColumn = address.column > this.state.furthestColumn ? address.column : this.state.furthestColumn;
+                this.state.furthestRow = address.row > this.state.furthestRow ? address.row : this.state.furthestRow;
             }
         })
 
         this._notifyListeners();
-    }
-
-    public unsubscribe(listener: GameBoardListener) {
-        this._listeners = this._listeners.filter(l => l !== listener);
-    }
-
-    public subscribe(listener: GameBoardListener) {
-        if (this._listeners.includes(listener)) {
-            return;
-        }
-        this._listeners.push(listener);
-        listener(this);
-    }
-
-    private _notifyListeners() {
-        this._listeners.forEach(listener => listener(this));
     }
 
     public toJSON(): any {

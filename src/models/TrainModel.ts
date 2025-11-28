@@ -6,6 +6,7 @@ import TrainTrespassingLight from "#src/types/TrainTresspasingLight.js";
 import FieldModel from "./FieldModel.js";
 import AddressUtils from "#src/utils/AddressUtils.js";
 import GameFieldElement from "#src/components/GameFieldElement/GameFieldElement.js";
+import Service from "#src/framework/Service/Service.js";
 
 interface TrainState {
     id: string;
@@ -39,72 +40,14 @@ const colors = [
     "rgb(147, 222, 135)",
     "rgb(135, 222, 195)",]
 
-class TrainModel implements TrainState {
-    private _id: string;
-    private _name: string;
-    private _route: TrainRouteEvent[];
-    private _journey: Array<TrainRouteEvent[]>;
-    private _location: Address;
-    private _destination: Address | null;
-    private _direction: Direction | null = null;
-    private _randomColor: string;
-
-    get id() {
-        return this._id;
-    }
-
-    get name() {
-        return this._name;
-    }
-
-    get route() {
-        return this._route;
-    }
-
-    get journey() {
-        return this._journey;
-    }
-
-    get destination() {
-        return this._destination
-    }
-    get location() {
-        return this._location;
-    }
-
-    get direction() {
-        return this._direction;
-    }
-
-    get randomColor() {
-        return this._randomColor;
-    }
-
-    get state(): TrainState {
-        return {
-            id: this._id,
-            name: this._name,
-            route: this._route,
-            journey: this._journey,
-            destination: this._destination,
-            location: this._location,
-            direction: this.direction,
-            randomColor: this._randomColor,
-
-        }
-    }
+class TrainModel extends Service<TrainState> {
+    state: TrainState;
 
     private constructor(params: TrainState) {
-        this._id = params.id;
-        this._name = params.name;
-        this._route = params.route;
-        this._journey = params.journey;
-        this._location = params.location;
-        this._destination = params.destination;
-        this._randomColor = params.randomColor;
+        super();
+        this.state = params;
         this.onFieldListener = this.onFieldListener.bind(this);
         this.setRoute = this.setRoute.bind(this);
-        this.onFieldListener = this.onFieldListener.bind(this);
         this.toJSON = this.toJSON.bind(this);
         this.setJourney = this.setJourney.bind(this);
     }
@@ -112,14 +55,16 @@ class TrainModel implements TrainState {
     _routeReady = false;
 
     private _trespassingInProgress: number | null = null;
-    private async onFieldListener(field: FieldModel) {
 
-        if (this._route.length === 0
-            && this._destination
-            && AddressUtils.isAddressEqual(this._destination, field.address)
+    private async onFieldListener(field: FieldModel['state']) {
+        const fieldModel = GameBoard.getInstance().getField(field.address);
+        if (!fieldModel) return;
+        if (this.state.route.length === 0
+            && this.state.destination
+            && AddressUtils.isAddressEqual(this.state.destination, field.address)
             && this._trespassingInProgress === null
         ) {
-            const nextRoute = this._journey.shift();
+            const nextRoute = this.state.journey.shift();
             if (nextRoute) this.setRoute({ route: nextRoute });
         }
 
@@ -128,18 +73,17 @@ class TrainModel implements TrainState {
             return;
         }
 
-        const fieldEvent = field.events.find(event => event.id === this.id);
+        const fieldEvent = field.events.find(event => event.id === this.state.id);
 
         if (!fieldEvent) {
             return
         }
 
-        const isCurrEv = this.route[0] && AddressUtils.isAddressEqual(fieldEvent.address, this._route[0]!.address);
-        const isNextEv = this.route[1] && AddressUtils.isAddressEqual(fieldEvent.address, this._route[1]!.address);
+        const isCurrEv = this.state.route[0] && AddressUtils.isAddressEqual(fieldEvent.address, this.state.route[0]!.address);
+        const isNextEv = this.state.route[1] && AddressUtils.isAddressEqual(fieldEvent.address, this.state.route[1]!.address);
 
         if (isCurrEv) {
-
-            const isAlreadyResolved = fieldEvent.to === this._direction;
+            const isAlreadyResolved = fieldEvent.to === this.state.direction;
             if (isAlreadyResolved) {
                 return;
             }
@@ -148,33 +92,35 @@ class TrainModel implements TrainState {
                 return;
             }
 
-            const fieldElement = document.querySelector(`[data-key="${AddressUtils.toKey(this.location)}"]`) as GameFieldElement;
-            fieldElement.appendTrainAnimation({ from: fieldEvent.from, to: fieldEvent.to, trainId: this._id });
+            const fieldElement = document.querySelector(`[data-key="${AddressUtils.toKey(this.state.location)}"]`) as GameFieldElement;
+            fieldElement.appendTrainAnimation({ from: fieldEvent.from, to: fieldEvent.to, trainId: this.state.id });
 
             this._trespassingInProgress = setTimeout(() => {
 
-                this._direction = fieldEvent.to;
+                this.state.direction = fieldEvent.to;
                 this._trespassingInProgress = null;
 
-                const nextField = this._route[1] ? GameBoard.getInstance().getField(this._route[1].address) : null;
-                nextField?.signalTrespassing({ trainId: this._id });
+                const nextField = this.state.route[1] ? GameBoard.getInstance().getField(this.state.route[1].address) : null;
+                nextField?.signalTrespassing({ trainId: this.state.id });
 
-                if (!this._route[1]) {
-                    this._location = field.address;
-                    this._route.shift();
-                    field.signalTrespassed({ trainId: this._id });
-                    field.unsubscribe(this.onFieldListener)
+                if (!this.state.route[1]) {
+                    this.state.location = field.address;
+                    this.state.route.shift();
+                    fieldModel.signalTrespassed({ trainId: this.state.id });
+                    fieldModel.unsubscribe(this.onFieldListener)
                 }
             }, fieldEvent.durationMiliseconds);
         }
 
         if (isNextEv) {
-            const prevEv = this.route[0];
+
+
+            const prevEv = this.state.route[0];
             if (!prevEv) {
                 /** already handled */
                 return;
             }
-            const isPrevResolved = prevEv.to === this._direction && AddressUtils.isAddressEqual(prevEv.address, this._location);
+            const isPrevResolved = prevEv.to === this.state.direction && AddressUtils.isAddressEqual(prevEv.address, this.state.location);
             if (!isPrevResolved) {
                 /** Not yet here */
                 return;
@@ -184,17 +130,17 @@ class TrainModel implements TrainState {
                 return;
             }
 
-            const prevField = GameBoard.getInstance().getField(this._location);
+            const prevField = GameBoard.getInstance().getField(this.state.location);
             if (!prevField) {
                 /** not possible */
                 return
             }
 
-            this._location = fieldEvent.address;
-            this._direction = fieldEvent.from;
-            this._route.shift();
-            field.signalTrespassing({ trainId: this._id });
-            prevField.signalTrespassed({ trainId: this._id });
+            this.state.location = fieldEvent.address;
+            this.state.direction = fieldEvent.from;
+            this.state.route.shift();
+            fieldModel.signalTrespassing({ trainId: this.state.id });
+            prevField.signalTrespassed({ trainId: this.state.id });
             prevField.unsubscribe(this.onFieldListener)
         }
     }
@@ -205,33 +151,38 @@ class TrainModel implements TrainState {
         const journeyWithourFirstRoute = [...params.journey];
         const firstRoute = journeyWithourFirstRoute.shift();
         if (firstRoute) {
-            this._journey = journeyWithourFirstRoute;
+            this.setState({ journey: journeyWithourFirstRoute })
             this.setRoute(({ route: firstRoute }))
         }
     }
 
     public setRoute(params: { route: TrainRouteEvent[] }) {
         const { route } = params;
-        this._route = route;
+        this.setState({
+            route
+        })
         this._routeReady = false;
 
-        const destination = this._route[this._route.length - 1]?.address;
+        const destination = this.state.route[this.state.route.length - 1]?.address;
         if (!destination) return;
-        this._destination = destination;
+        this.setState({
+            destination
+        })
 
-        this._route.forEach((event) => {
+        this.state.route.forEach((event) => {
             const field = GameBoard.getInstance().getField(event.address);
             if (!field) {
                 return;
             }
             field.subscribe(this.onFieldListener);
-            field.bookTrainRoute({ event, id: this.id });
+            field.bookTrainRoute({ event, id: this.state.id });
         });
 
         this._routeReady = true;
-        const nextField = this.route[0] ? GameBoard.getInstance().getField(this.route[0].address) : null;
+
+        const nextField = this.state.route[0] ? GameBoard.getInstance().getField(this.state.route[0].address) : null;
         if (nextField) {
-            nextField.signalTrespassing({ trainId: this._id });
+            nextField.signalTrespassing({ trainId: this.state.id });
         }
     }
 
@@ -240,7 +191,7 @@ class TrainModel implements TrainState {
 
         const id = `${Math.random().toString(36).substring(2, 15)}-${Date.now().toString(36)}`;
 
-        const name = `Train ${(Object.entries(GameBoard.getInstance().trains).length ?? 0) + 1}`;
+        const name = `Train ${(Object.entries(GameBoard.getInstance().state.trains).length ?? 0) + 1}`;
 
         const randomColor = colors[Math.round(Math.random() * (colors.length - 1))] ?? 'purple';
 
@@ -255,12 +206,6 @@ class TrainModel implements TrainState {
             randomColor,
         });
 
-        // const field = GameBoard.getInstance().getField(params.address);
-        // if (field) {
-        //     const fieldEl = GameBoard.getInstance().getFieldElement(params.address);
-        //     fieldEl?.appendTrainAnimation({ from: newModel._direction, to: newModel._direction, trainId: newModel._id })
-        // }
-
         return newModel;
     }
 
@@ -270,11 +215,6 @@ class TrainModel implements TrainState {
 
     static fromJSON(json: TrainState): TrainModel {
         const model = new TrainModel(json);
-        // const field = GameBoard.getInstance().getField(json.location);
-        // if (field) {
-        //     const fieldEl = GameBoard.getInstance().getFieldElement(json.location);
-        //     fieldEl?.appendTrainAnimation({ from: model.direction, to: model.direction, trainId: model.id })
-        // }
         return model;
     }
 }

@@ -23,8 +23,8 @@ const getDominantTerrains = (fields: Record<string, FieldModel | undefined>): Re
 
     for (const dir in fields) {
         const field = fields[dir as keyof typeof fields];
-        if (field && field.terrain !== null) {
-            neighbours.push(field.terrain);
+        if (field && field.state.terrain !== null) {
+            neighbours.push(field.state.terrain);
         }
     }
 

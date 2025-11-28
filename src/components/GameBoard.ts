@@ -2,6 +2,8 @@ import Config from "#src/config.js";
 import BaseComponent from "#src/framework/BaseComponent/BaseComponent.js";
 import StatefullComponent from "#src/framework/StatefullComponent/StatefullComponent.js";
 import GameBoard from "#src/GameBoard.js";
+import FieldModel from "#src/models/FieldModel.js";
+import TrainModel from "#src/models/TrainModel.js";
 import FloatersService from "#src/service/FloatersService/FloatersService.js";
 import AddressUtils from "#src/utils/AddressUtils.js";
 import GameFieldElement from "./GameFieldElement/GameFieldElement.js";
@@ -11,7 +13,12 @@ type GameBoardElementState = {
 
 }
 
-type GameBoardElementProps = GameBoard
+type GameBoardElementProps = {
+    trains: Record<string, TrainModel>,
+    fields: Record<string, FieldModel>
+    furthestRow: number,
+    furthestColumn: number,
+}
 
 class GameBoardElement extends StatefullComponent<GameBoardElementState, GameBoardElementProps> {
 
@@ -22,7 +29,6 @@ class GameBoardElement extends StatefullComponent<GameBoardElementState, GameBoa
     constructor() {
         super();
         this.manageWorldBgElement = this.manageWorldBgElement.bind(this);
-        this.renderOnProps = this.renderOnProps.bind(this);
     }
 
     override render() {
@@ -50,7 +56,7 @@ class GameBoardElement extends StatefullComponent<GameBoardElementState, GameBoa
              */
 
             const trainElement = TrainRunElement.trainSelector(trainId);
-            const fieldElement = GameFieldElement.selectFieldByAddress(train.location);
+            const fieldElement = GameFieldElement.selectFieldByAddress(train.state.location);
 
             if (!trainElement && fieldElement) {
                 const trainAnimation = TrainRunElement.createTrainElement({
@@ -73,17 +79,13 @@ class GameBoardElement extends StatefullComponent<GameBoardElementState, GameBoa
         this.worldBgElement.style.height = (Config.cellSizePx * Config.boardSize) + 'px';
     }
 
-    renderOnProps(gameBoard: GameBoard) {
-        this.setProps(gameBoard)
-    }
-
     connectedCallback() {
-        GameBoard.getInstance().subscribe(this.renderOnProps);
+        GameBoard.getInstance().subscribe(this.setProps);
         GameBoard.ServicesRegistry.floaters.subscribe(this.manageWorldBgElement)
     }
 
     disconnectedCallback() {
-        GameBoard.getInstance().unsubscribe(this.renderOnProps);
+        GameBoard.getInstance().unsubscribe(this.setProps);
     }
 }
 

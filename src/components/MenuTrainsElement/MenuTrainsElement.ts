@@ -133,10 +133,10 @@ class MenuTrainsElement extends StatefullComponent<ElementState, ElementProps> {
         document.createElement('li');
         const listItemContent = document.createElement('li');
         listItemContent.classList.add('list_item')
-        listItemContent.setAttribute('data-train', train.id);
+        listItemContent.setAttribute('data-train', train.state.id);
         listItemContent.innerHTML = `
-            <train-atom data-train="${train.id}" data-color="${train.randomColor}" class="--presentation"></train-atom>
-            <span class="train-name">${train.name}</span>
+            <train-atom data-train="${train.state.id}" data-color="${train.state.randomColor}" class="--presentation"></train-atom>
+            <span class="train-name">${train.state.name}</span>
             <button class="box-primary set-route">Set route</button>
         `;
         const trainEl = listItemContent.querySelector('train-atom') as TrainAtom;
@@ -144,7 +144,7 @@ class MenuTrainsElement extends StatefullComponent<ElementState, ElementProps> {
         listItemContent.onmouseleave = () => trainEl?.classList.remove('--moving');
         const btn = listItemContent.querySelector('button') as HTMLButtonElement;
         btn.onclick = () => {
-            actionsMenuService.onTrainSetRoute({ trainId: train.id });
+            actionsMenuService.onTrainSetRoute({ trainId: train.state.id });
         }
         return listItemContent;
     }
@@ -160,8 +160,8 @@ class MenuTrainsElement extends StatefullComponent<ElementState, ElementProps> {
             if (payload) {
                 const { address } = payload;
                 const field = GameBoard.getInstance().getField(address);
-                const preview = field ? GameFieldElement.renderPreviewDuplicate(field.address) : null;
-                if (field?.building === BuildingKind.RailwayGarage && preview) {
+                const preview = field ? GameFieldElement.renderPreviewDuplicate(field.state.address) : null;
+                if (field?.state.building === BuildingKind.RailwayGarage && preview) {
 
                     if (!this.garageHeader.isConnected) {
                         this.wrapper.insertBefore(this.garageHeader, this.trainsSection);
@@ -174,13 +174,13 @@ class MenuTrainsElement extends StatefullComponent<ElementState, ElementProps> {
                     this.wrapper.showModal();
 
                     this.fieldPreviewBuildingKind.innerText = 'Train Garage'
-                    this.fieldPreviewAddress.innerHTML = `<span class="indicator-address" style="display: inline-block;"></span> C:${field.address.column} &#10005; R:${field.address.row}`;
-                    this.fieldPreviewOrientation.innerHTML = `<span class="indicator-blue" style="display: inline-block;"></span> to ${Object.entries(field.railwayOrientation).find(entry => entry[1])?.[0]}`;
+                    this.fieldPreviewAddress.innerHTML = `<span class="indicator-address" style="display: inline-block;"></span> C:${field.state.address.column} &#10005; R:${field.state.address.row}`;
+                    this.fieldPreviewOrientation.innerHTML = `<span class="indicator-blue" style="display: inline-block;"></span> to ${Object.entries(field.state.railwayOrientation).find(entry => entry[1])?.[0]}`;
 
                     this.trainsList.innerHTML = '';
                     let trainsAmountHere = 0;
                     Object.values(props.trains).forEach(train => {
-                        if (AddressUtils.isAddressEqual(train.location, field.address)) {
+                        if (AddressUtils.isAddressEqual(train.state.location, field.state.address)) {
                             this.trainsList.appendChild(MenuTrainsElement.getTrainsListItem(train));
                             trainsAmountHere += 1;
                         }
@@ -209,7 +209,5 @@ class MenuTrainsElement extends StatefullComponent<ElementState, ElementProps> {
         }
     }
 }
-
-// customElements.define(MenuTrainsElement.componentName, MenuTrainsElement);
 
 export default MenuTrainsElement;
