@@ -1,3 +1,4 @@
+import GameBoard from "#src/GameBoard.js";
 import Direction from "#src/types/Direction.js";
 import DirectionUtils from "#src/utils/DirectionUtils.js";
 
@@ -47,8 +48,6 @@ class TrainRunElement extends HTMLElement {
         super();
         this.setRoute = this.setRoute.bind(this);
         this.render = this.render.bind(this);
-
-
     }
 
     color: string = 'purple';
@@ -111,6 +110,14 @@ class TrainRunElement extends HTMLElement {
             this.startEl.appendChild(this.trainEl);
             this.trainEl.classList.add('--moving');
         }
+
+        if (!this.to && !this.from) {
+            //this.classList.add(`from-${DirectionUtils.OpositeDirection[this.to]}`);
+            this.appendChild(this.stopEl);
+            // this.startEl.classList.add(`from-${DirectionUtils.OpositeDirection[this.to]}`);
+            this.stopEl.appendChild(this.trainEl);
+            this.trainEl.classList.remove('--moving');
+        }
     }
 
 
@@ -123,14 +130,28 @@ class TrainRunElement extends HTMLElement {
         this.innerHTML = '';
     }
 
-    static selectTrainByTrainId(trainId: string) {
-        if (trainId) {
+    static trainSelector(trainId: string, parent?: Element): TrainRunElement | null {
+        if (!trainId) {
             return null
         }
-        return document.querySelector(`[data-train="${trainId}"]`);
+        return (parent ?? document).querySelector(`${TrainRunElement.componentName}[data-train="${trainId}"]`);
+    }
+
+    static createTrainElement(params: {
+        trainId: string
+    }): TrainRunElement | void {
+        const train = GameBoard.getInstance().trains[params.trainId];
+        if (train) {
+            const trainAnimation = document.createElement(TrainRunElement.componentName) as TrainRunElement;
+            trainAnimation.setRoute({
+                from: train.direction,
+                to: train.direction
+            });
+            trainAnimation.setAttribute('data-train', params.trainId)
+            trainAnimation.setColor(train.randomColor);
+            return trainAnimation;
+        }
     }
 }
-
-// customElements.define(TrainRunElement.componentName, TrainRunElement);
 
 export default TrainRunElement;

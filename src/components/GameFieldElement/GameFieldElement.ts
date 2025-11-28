@@ -64,6 +64,7 @@ class GameFieldElement extends HTMLElement {
         this.subscribeAdjacnetFields = this.subscribeAdjacnetFields.bind(this);
         this.appendTrainAnimation = this.appendTrainAnimation.bind(this);
         this.subscribeTrafficLights = this.subscribeTrafficLights.bind(this);
+        this.appenTrainElement = this.appenTrainElement.bind(this);
     }
 
     private subscribeTrafficLights(field: FieldModel) {
@@ -105,6 +106,14 @@ class GameFieldElement extends HTMLElement {
         trainAnimation.setAttribute('data-train', params.trainId)
         trainAnimation.setColor(color);
         this.layerRouteAnimationElement.appendChild(trainAnimation);
+    }
+
+    public appenTrainElement(trainElement: TrainRunElement) {
+        const trainId = trainElement.getAttribute('data-train');
+        if (trainId) {
+            TrainRunElement.trainSelector(trainId, this)?.remove();
+            this.layerRouteAnimationElement.appendChild(trainElement);
+        }
     }
 
     public setPresentationVariant(variant: boolean) {
@@ -257,6 +266,8 @@ class GameFieldElement extends HTMLElement {
         const edgeLayer = this.layerTerrainEdgesElement;
         const edges = shouldRenderAdjacentTerrainEdge(field);
 
+
+
         const elementsMap = {
             [Direction.Top]: this.topEdgeElement,
             [Direction.Bottom]: this.bottomEdgeElement,
@@ -267,7 +278,7 @@ class GameFieldElement extends HTMLElement {
         Object.entries(edges).forEach(([dir, edge]) => {
             const direction = dir as Direction;
             const element = elementsMap[direction];
-            if (edge && !element.classList.contains(`edge-${direction}`)) {
+            if (edge && !element.isConnected) {
                 edgeLayer.appendChild(element);
                 element.style.backgroundImage = `url('images/terrain/${terrainKindToEdgeImage(edge)}-edge.png')`;
                 element.style.backgroundSize = 'contain';
@@ -384,7 +395,7 @@ class GameFieldElement extends HTMLElement {
         }
     }
 
-    static selectFieldByAddress(address: Address) {
+    static selectFieldByAddress(address: Address): GameFieldElement | null {
         return document.querySelector(`[data-key="${AddressUtils.toKey(address)}"]`)
     }
 
@@ -402,8 +413,6 @@ class GameFieldElement extends HTMLElement {
         return null;
     }
 }
-
-// customElements.define(GameFieldElement.componentName, GameFieldElement);
 
 export default GameFieldElement;
 

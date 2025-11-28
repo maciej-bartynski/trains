@@ -1,11 +1,19 @@
 import Config from "#src/config.js";
 import BaseComponent from "#src/framework/BaseComponent/BaseComponent.js";
+import StatefullComponent from "#src/framework/StatefullComponent/StatefullComponent.js";
 import GameBoard from "#src/GameBoard.js";
 import FloatersService from "#src/service/FloatersService/FloatersService.js";
 import AddressUtils from "#src/utils/AddressUtils.js";
 import GameFieldElement from "./GameFieldElement/GameFieldElement.js";
+import TrainRunElement from "./TrainRun/TrainRun.js";
 
-class GameBoardElement extends BaseComponent {
+type GameBoardElementState = {
+
+}
+
+type GameBoardElementProps = GameBoard
+
+class GameBoardElement extends StatefullComponent<GameBoardElementState, GameBoardElementProps> {
 
     static componentName = 'game-board-element';
 
@@ -13,15 +21,20 @@ class GameBoardElement extends BaseComponent {
 
     constructor() {
         super();
-        this.render = this.render.bind(this);
         this.manageWorldBgElement = this.manageWorldBgElement.bind(this);
+        this.renderOnProps = this.renderOnProps.bind(this);
     }
 
-    async render(board: GameBoard) {
-        await GameBoardElement.appReady;
-        const fields = board.fields;
+    override render() {
+        const gameBoard = this.getProps();
+        const fields = gameBoard.fields;
+        const trains = gameBoard.trains;
+
         Object.entries(fields).forEach(([key, field]) => {
-            let gameField = this.querySelector(`[data-key="${key}"]`) as GameFieldElement;
+            /**
+             * Any bulk fields logic
+             */
+            let gameField = this.querySelector(`${GameFieldElement.componentName}[data-key="${key}"]`) as GameFieldElement;
             const address = AddressUtils.fromKey(key);
             if (!gameField && address) {
                 gameField = document.createElement(GameFieldElement.componentName) as GameFieldElement;
@@ -29,6 +42,26 @@ class GameBoardElement extends BaseComponent {
                 gameField.setAddress(address);
                 this.appendChild(gameField);
             }
+        });
+
+        Object.entries(trains).forEach(([trainId, train]) => {
+            /**
+             * Any bulk trains logic
+             */
+
+            const trainElement = TrainRunElement.trainSelector(trainId);
+            const fieldElement = GameFieldElement.selectFieldByAddress(train.location);
+
+            if (!trainElement && fieldElement) {
+                const trainAnimation = TrainRunElement.createTrainElement({
+                    trainId: trainId,
+                });
+
+                if (trainAnimation) {
+                    fieldElement.appenTrainElement(trainAnimation)
+                }
+            }
+
         });
     }
 
@@ -40,13 +73,17 @@ class GameBoardElement extends BaseComponent {
         this.worldBgElement.style.height = (Config.cellSizePx * Config.boardSize) + 'px';
     }
 
+    renderOnProps(gameBoard: GameBoard) {
+        this.setProps(gameBoard)
+    }
+
     connectedCallback() {
-        GameBoard.getInstance().subscribe(this.render);
+        GameBoard.getInstance().subscribe(this.renderOnProps);
         GameBoard.ServicesRegistry.floaters.subscribe(this.manageWorldBgElement)
     }
 
     disconnectedCallback() {
-        GameBoard.getInstance().unsubscribe(this.render);
+        GameBoard.getInstance().unsubscribe(this.renderOnProps);
     }
 }
 

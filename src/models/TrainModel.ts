@@ -255,11 +255,11 @@ class TrainModel implements TrainState {
             randomColor,
         });
 
-        const field = GameBoard.getInstance().getField(params.address);
-        if (field) {
-            const fieldEl = GameBoard.getInstance().getFieldElement(params.address);
-            fieldEl?.appendTrainAnimation({ from: newModel._direction, to: newModel._direction, trainId: newModel._id })
-        }
+        // const field = GameBoard.getInstance().getField(params.address);
+        // if (field) {
+        //     const fieldEl = GameBoard.getInstance().getFieldElement(params.address);
+        //     fieldEl?.appendTrainAnimation({ from: newModel._direction, to: newModel._direction, trainId: newModel._id })
+        // }
 
         return newModel;
     }
@@ -270,11 +270,11 @@ class TrainModel implements TrainState {
 
     static fromJSON(json: TrainState): TrainModel {
         const model = new TrainModel(json);
-        const field = GameBoard.getInstance().getField(json.location);
-        if (field) {
-            const fieldEl = GameBoard.getInstance().getFieldElement(json.location);
-            fieldEl?.appendTrainAnimation({ from: model.direction, to: model.direction, trainId: model.id })
-        }
+        // const field = GameBoard.getInstance().getField(json.location);
+        // if (field) {
+        //     const fieldEl = GameBoard.getInstance().getFieldElement(json.location);
+        //     fieldEl?.appendTrainAnimation({ from: model.direction, to: model.direction, trainId: model.id })
+        // }
         return model;
     }
 }
