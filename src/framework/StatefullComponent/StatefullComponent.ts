@@ -1,3 +1,4 @@
+import BaseComponent from "../BaseComponent/BaseComponent.js";
 
 type Props = unknown | undefined;
 type State = unknown | undefined;
@@ -9,7 +10,7 @@ interface iStatefullComponent<S, P> {
 class StatefullComponent<
     TState extends State,
     TProps extends Props
-> extends HTMLElement
+> extends BaseComponent
     implements iStatefullComponent<TState, TProps> {
 
     private _state: TState = undefined as TState;
@@ -47,14 +48,14 @@ class StatefullComponent<
 
         if (isOrWillBePrimitive) {
             this._state = update;
-            this.render();
+            this.renderWrapper();
         }
 
         const isOrWillBeArray = this._state instanceof Array || update instanceof Array;
 
         if (isOrWillBeArray) {
             this._state = update;
-            this.render();
+            this.renderWrapper();
         }
 
         const isAndWillBeObject = this._state instanceof Object && update instanceof Object;
@@ -65,13 +66,14 @@ class StatefullComponent<
                 ...oldState,
                 ...update
             }
-            this.render();
+            this.renderWrapper();
         }
     }
 
     constructor() {
         super();
         this.render = this.render.bind(this);
+        this.renderWrapper = this.renderWrapper.bind(this);
         this.setState = this.setState.bind(this);
         this.setProps = this.setProps.bind(this);
         this.getState = this.getState.bind(this);
@@ -80,7 +82,12 @@ class StatefullComponent<
 
     public setProps(props: TProps) {
         this._props = props;
-        this.render()
+        this.renderWrapper()
+    }
+
+    private async renderWrapper() {
+        await BaseComponent.appReady;
+        this.render();
     }
 
     protected render() {

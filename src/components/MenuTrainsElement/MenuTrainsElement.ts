@@ -1,16 +1,13 @@
 import TrainAtom from "#src/atoms/TrainAtom/TrainAtom.js";
 import StatefullComponent from "#src/framework/StatefullComponent/StatefullComponent.js";
-import { GameBoard } from "#src/GameBoard.js";
+import GameBoard from "#src/GameBoard.js";
 import FieldModel from "#src/models/FieldModel.js";
 import TrainModel from "#src/models/TrainModel.js";
 import ActionsMenuService from "#src/service/ActionsMenuService/ActionsMenuService.js";
 import actionsMenuService from "#src/service/ActionsMenuService/index.js";
 import ActionsMenuOptionName from "#src/service/ActionsMenuService/types.js";
-import pointerOperations from "#src/service/PointerOperations/PointerOperations.js";
-import OperationType, { Operation } from "#src/service/PointerOperations/types.js";
 import BuildingKind from "#src/types/BuildingKind.js";
 import AddressUtils from "#src/utils/AddressUtils.js";
-import Pathfinder from "#src/utils/Pathfinder.js";
 import GameFieldElement from "../GameFieldElement/GameFieldElement.js";
 
 type ElementState = {}
@@ -213,6 +210,6 @@ class MenuTrainsElement extends StatefullComponent<ElementState, ElementProps> {
     }
 }
 
-customElements.define(MenuTrainsElement.componentName, MenuTrainsElement);
+// customElements.define(MenuTrainsElement.componentName, MenuTrainsElement);
 
 export default MenuTrainsElement;

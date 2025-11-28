@@ -1,36 +1,37 @@
+import Service from "#src/framework/Service/Service.js";
 import Address from "#src/types/Address.js";
 import BuildingKind from "#src/types/BuildingKind.js";
 import Orientation, { OrientationSquareVariant } from "#src/types/Orientation.js";
 import TrainRouteEvent from "#src/types/TrainTrespassingEvent.js";
 import ActionsMenuOptionName, { ActionsMenuOption, BuildBuildingOption, BuildRailwayOption, TrainSetRouteOption } from "./types.js";
 
-class ActionsMenuService {
+type ActionsMenuServiceState = {
+    action: ActionsMenuOption | null
+}
 
-    state: {
-        action: ActionsMenuOption | null
-    } = {
-            action: null
+class ActionsMenuService extends Service<ActionsMenuServiceState> {
+
+    private static instance: ActionsMenuService;
+
+    static getInstance(): ActionsMenuService {
+        if (!Service.gameBoard) {
+            throw new Error('ActionsMenuService not registered')
         }
 
-    listeners: ((param: ActionsMenuService['state']) => void)[] = [];
+        if (ActionsMenuService.instance) {
+            return ActionsMenuService.instance
+        }
 
-    private setState(newState: Partial<ActionsMenuService['state']>) {
-        this.state = {
-            ...this.state,
-            ...newState,
-        };
-
-        this.notifyListeners();
+        ActionsMenuService.instance = new ActionsMenuService();
+        return ActionsMenuService.instance;
     }
 
-    private notifyListeners() {
-        this.listeners.forEach((listener) => listener(this.state));
+    state: ActionsMenuServiceState = {
+        action: null
     }
 
     constructor() {
-        this.notifyListeners = this.notifyListeners.bind(this);
-        this.subscribe = this.subscribe.bind(this);
-        this.unsubscribe = this.unsubscribe.bind(this);
+        super();
         this.onBuildRailwayOption = this.onBuildRailwayOption.bind(this);
         this.onBuildBuildingOption = this.onBuildBuildingOption.bind(this);
         this.onTrainsListOption = this.onTrainsListOption.bind(this);
@@ -106,8 +107,9 @@ class ActionsMenuService {
 
     onTrainSetRoute(params: { trainId: string, route?: TrainRouteEvent[] }) {
         let nextRoutes: undefined | Array<TrainRouteEvent[]> = undefined;
-        if (params.route) {
-            const currentState = (this.state.action as TrainSetRouteOption);
+        const currentState = this.state.action;
+
+        if (params.route && this.isTrainSetRoute(currentState)) {
             nextRoutes = [...(currentState?.payload?.routes ?? []), params.route];
         }
 
@@ -120,7 +122,6 @@ class ActionsMenuService {
                 }
             }
         });
-
     }
 
     onDestroyOption() {
@@ -131,15 +132,10 @@ class ActionsMenuService {
         })
     }
 
-    public subscribe(listener: (param: ActionsMenuService['state']) => void) {
-        if (!this.listeners.includes(listener)) {
-            this.listeners.push(listener);
-            listener(this.state);
-        }
-    }
-
-    public unsubscribe(listener: (param: ActionsMenuService['state']) => void) {
-        this.listeners = this.listeners.filter(l => l !== listener)
+    /** helpers */
+    isTrainSetRoute(action: ActionsMenuOption | null): action is TrainSetRouteOption {
+        if (!action) return false;
+        return action.type === ActionsMenuOptionName.TrainSetRoute;
     }
 }
 

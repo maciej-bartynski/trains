@@ -1,8 +1,13 @@
 import GameFieldElement from "./components/GameFieldElement/GameFieldElement.js";
+import Service from "./framework/Service/Service.js";
 import FieldModel from "./models/FieldModel.js";
 import TrainModel from "./models/TrainModel.js";
+import ActionsMenuService from "./service/ActionsMenuService/ActionsMenuService.js";
+import actionsMenuService from "./service/ActionsMenuService/index.js";
+import FloatersService from "./service/FloatersService/FloatersService.js";
 import Address from "./types/Address.js";
 import ConstructionState from "./types/ConstructionState.js";
+import Direction from "./types/Direction.js";
 import FieldVisibility from "./types/FieldVisibility.js";
 import AddressUtils from "./utils/AddressUtils.js";
 import AdjacentFields from "./utils/AdjacentFields.js";
@@ -17,6 +22,20 @@ interface GameBoardState {
 type GameBoardListener = (params: GameBoard) => void;
 
 class GameBoard implements GameBoardState {
+
+    static ServicesRegistry: {
+        floaters: FloatersService,
+        actionsMenu: ActionsMenuService,
+    } = {
+            floaters: null!,
+            actionsMenu: null!
+        }
+
+    private registerServices() {
+        Service.register(this);
+        GameBoard.ServicesRegistry.floaters = FloatersService.getInstance();
+        GameBoard.ServicesRegistry.actionsMenu = ActionsMenuService.getInstance();
+    }
 
     private _listeners: GameBoardListener[] = [];
 
@@ -53,16 +72,21 @@ class GameBoard implements GameBoardState {
         }
     }
 
-    private constructor(params: GameBoardState) {
-        Object.entries(params.fields).forEach(([key, field]) => {
-            this._fields[key] = FieldModel.fromJSON(field);
-        });
-        Object.entries(params.trains).forEach(([key, train]) => {
-            this._trains[key] = TrainModel.fromJSON(train);
-        });
-        this._furthestColumn = params.furthestColumn;
-        this._furthestRow = params.furthestRow;
+    private constructor() {
         this.onBuild = this.onBuild.bind(this);
+    }
+
+    private configure(game: GameBoardState | null) {
+        if (game) {
+            Object.entries(game.fields).forEach(([key, field]) => {
+                this._fields[key] = FieldModel.fromJSON(field);
+            });
+            Object.entries(game.trains).forEach(([key, train]) => {
+                this._trains[key] = TrainModel.fromJSON(train);
+            });
+            this._furthestColumn = game.furthestColumn;
+            this._furthestRow = game.furthestRow;
+        }
     }
 
     public setTrain(train: TrainModel) {
@@ -88,11 +112,6 @@ class GameBoard implements GameBoardState {
         }
         const newField = FieldModel.touch(address);
         this._fields[AddressUtils.toKey(address)] = newField;
-        this._notifyListeners();
-    }
-
-    private setUpField(address: Address, field: FieldModel) {
-        this._fields[AddressUtils.toKey(address)] = field;
         this._notifyListeners();
     }
 
@@ -165,43 +184,57 @@ class GameBoard implements GameBoardState {
         return JSON.parse(JSON.stringify(this.state));
     }
 
-    static fromJSON(json: GameBoardState) {
-        const listeners = [...GameBoard.instance._listeners];
-        GameBoard.instance = new GameBoard(json);
-        GameBoard.instance._listeners = listeners;
-        GameBoard.instance._notifyListeners();
-        Object.entries(GameBoard.instance.fields).forEach(fieldEntry => {
-            const [stringAddress, fieldModelData] = fieldEntry;
-            const address = AddressUtils.fromKey(stringAddress);
-            const fieldModel = FieldModel.fromJSON(fieldModelData);
-            if (address) {
-                GameBoard.instance.setUpField(address, fieldModel);
-                fieldModel.subscribe(GameBoard.instance.onBuild)
-            }
-        });
-        GameBoard.instance._notifyListeners();
-        Object.entries(GameBoard.instance._trains).forEach(train => {
-            const [trainId, trainModelData] = train;
-            const trainModel = TrainModel.fromJSON(trainModelData);
-            GameBoard.instance.setTrain(trainModel);
-        });
-        GameBoard.instance._notifyListeners();
-    }
-
     static instance: GameBoard;
     static getInstance() {
         if (!GameBoard.instance) {
-            GameBoard.instance = new GameBoard({
-                fields: {},
-                trains: {},
-                furthestRow: 0,
-                furthestColumn: 0
-            });
+            const gameString = window.localStorage.getItem('game');
+            const game = gameString ? JSON.parse(gameString) : null;
+
+            GameBoard.instance = new GameBoard();
+            GameBoard.instance.registerServices();
+            GameBoard.instance.configure(game ? game : null);
+
+            if (!gameString) {
+                const gameBoard = GameBoard.instance;
+                gameBoard.setField({ row: 10, column: 10 });
+                gameBoard.uncoverField({ row: 10, column: 10 });
+                gameBoard.getField({ row: 10, column: 10 })?.buildRailwayStation({
+                    orientation: {
+                        [Direction.Top]: true,
+                        [Direction.Bottom]: true,
+                        [Direction.Left]: true,
+                        [Direction.Right]: true
+                    }
+                });
+                gameBoard.setField({ row: 9, column: 10 });
+                gameBoard.uncoverField({ row: 9, column: 10 });
+                gameBoard.getField({ row: 9, column: 10 })?.buildRailway({
+                    orientation: {
+                        [Direction.Top]: true,
+                        [Direction.Bottom]: true,
+                        [Direction.Left]: false,
+                        [Direction.Right]: false
+                    }
+                });
+                gameBoard.setField({ row: 8, column: 10 });
+                gameBoard.uncoverField({ row: 8, column: 10 });
+                gameBoard.getField({ row: 8, column: 10 })?.buildRailway({
+                    orientation: {
+                        [Direction.Top]: true,
+                        [Direction.Bottom]: true,
+                        [Direction.Left]: false,
+                        [Direction.Right]: false
+                    }
+                });
+                gameBoard.setField({ row: 7, column: 10 });
+                gameBoard.uncoverField({ row: 7, column: 10 });
+                gameBoard.getField({ row: 7, column: 10 })?.buildRailwayGarage({
+                    direction: Direction.Bottom
+                });
+            }
         }
         return GameBoard.instance
     }
 }
 
 export default GameBoard;
-
-export { GameBoard };

@@ -131,6 +131,6 @@ class TrainRunElement extends HTMLElement {
     }
 }
 
-customElements.define(TrainRunElement.componentName, TrainRunElement);
+// customElements.define(TrainRunElement.componentName, TrainRunElement);
 
 export default TrainRunElement;

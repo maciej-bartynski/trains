@@ -27,7 +27,7 @@ class ConstructionProgressElement extends HTMLElement {
     }
 }
 
-customElements.define(ConstructionProgressElement.componentName, ConstructionProgressElement);
+// customElements.define(ConstructionProgressElement.componentName, ConstructionProgressElement);
 
 export default ConstructionProgressElement;
 

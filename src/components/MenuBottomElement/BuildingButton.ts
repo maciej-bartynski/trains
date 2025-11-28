@@ -1,5 +1,3 @@
-import pointerOperations from "#src/service/PointerOperations/PointerOperations.js";
-import OperationType from "#src/service/PointerOperations/types.js";
 import BuildingKind from "#src/types/BuildingKind.js";
 import Orientation, { OrientationSquareVariant } from "#src/types/Orientation.js";
 import BuildingOrientationUtils from "#src/utils/BuildingOrientationUtils.js";
@@ -63,6 +61,6 @@ class BuildingButtonElement extends HTMLElement {
     }
 }
 
-customElements.define(BuildingButtonElement.componentName, BuildingButtonElement);
+// customElements.define(BuildingButtonElement.componentName, BuildingButtonElement);
 
 export default BuildingButtonElement;

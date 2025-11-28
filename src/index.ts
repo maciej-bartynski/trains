@@ -1,62 +1,41 @@
-import '#src/components/GameBoard.js';
-import { GameBoard } from './GameBoard.js';
-import '#src/components/GameFieldElement/GameFieldElement.js';
-import '#src/components/MenuBottomElement/BuildingButton.js';
-import '#src/components/MenuBottomElement/MenuBottomElement.js';
-import '#src/components/TrainRun/TrainRun.js';
-import '#src/components/ActionsMenuElement/ActionsMenuElement.js';
-import '#src/components/MenuTrainsElement/MenuTrainsElement.js';
-import '#src/components/MenuTrainSetRoute/MenuTrainSetRoute.js';
-import '#src/atoms/TrainAtom/TrainAtom.js';
-import Direction from '#src/types/Direction.js';
-import '#src/service/FloatersService/FloatersService.js'
-import FloatersService from '#src/service/FloatersService/FloatersService.js';
+import GameBoard from './GameBoard.js';
+// import '#src/components/GameBoard.js';
+// import '#src/components/GameFieldElement/GameFieldElement.js';
+// import '#src/components/MenuBottomElement/BuildingButton.js';
+// import '#src/components/MenuBottomElement/MenuBottomElement.js';
+// import '#src/components/TrainRun/TrainRun.js';
+// import '#src/components/ActionsMenuElement/ActionsMenuElement.js';
+// import '#src/components/MenuTrainsElement/MenuTrainsElement.js';
+// import '#src/components/MenuTrainSetRoute/MenuTrainSetRoute.js';
+// import '#src/atoms/TrainAtom/TrainAtom.js';
+// import Direction from '#src/types/Direction.js';
+// import '#src/service/FloatersService/FloatersService.js'
+// import FloatersService from '#src/service/FloatersService/FloatersService.js';
+import GameBoardElement from '#src/components/GameBoard.js';
+import ActionMenuElement from '#src/components/ActionsMenuElement/ActionsMenuElement.js';
+import GameFieldElement from '#src/components/GameFieldElement/GameFieldElement.js';
+import MenuBottomElement from '#src/components/MenuBottomElement/MenuBottomElement.js';
+import MenuTrainsElement from '#src/components/MenuTrainsElement/MenuTrainsElement.js';
+import MenuTrainSetRoute from '#src/components/MenuTrainSetRoute/MenuTrainSetRoute.js';
+import TrainRunElement from '#src/components/TrainRun/TrainRun.js';
+import TrainAtom from '#src/atoms/TrainAtom/TrainAtom.js';
+import ConstructionProgressElement from './components/GameFieldElement/ConstructionProgressElement.js';
+import OperationIndicatorElement from './components/GameFieldElement/OperationIndicatorElement.js';
+import BuildingButtonElement from '#src/components/MenuBottomElement/BuildingButton.js';
+import BaseComponent from './framework/BaseComponent/BaseComponent.js';
 
 document.addEventListener('DOMContentLoaded', async (): Promise<void> => {
-    const gameString = window.localStorage.getItem('game');
-    if (gameString) {
-        const game = JSON.parse(gameString);
-        GameBoard.fromJSON(game);
-    } else {
-        const gameBoard = GameBoard.getInstance();
-        gameBoard.setField({ row: 10, column: 10 });
-        gameBoard.uncoverField({ row: 10, column: 10 });
-        gameBoard.getField({ row: 10, column: 10 })?.buildRailwayStation({
-            orientation: {
-                [Direction.Top]: true,
-                [Direction.Bottom]: true,
-                [Direction.Left]: true,
-                [Direction.Right]: true
-            }
-        });
-        gameBoard.setField({ row: 9, column: 10 });
-        gameBoard.uncoverField({ row: 9, column: 10 });
-        gameBoard.getField({ row: 9, column: 10 })?.buildRailway({
-            orientation: {
-                [Direction.Top]: true,
-                [Direction.Bottom]: true,
-                [Direction.Left]: false,
-                [Direction.Right]: false
-            }
-        });
-        gameBoard.setField({ row: 8, column: 10 });
-        gameBoard.uncoverField({ row: 8, column: 10 });
-        gameBoard.getField({ row: 8, column: 10 })?.buildRailway({
-            orientation: {
-                [Direction.Top]: true,
-                [Direction.Bottom]: true,
-                [Direction.Left]: false,
-                [Direction.Right]: false
-            }
-        });
-        gameBoard.setField({ row: 7, column: 10 });
-        gameBoard.uncoverField({ row: 7, column: 10 });
-        gameBoard.getField({ row: 7, column: 10 })?.buildRailwayGarage({
-            direction: Direction.Bottom
-        });
-    }
-
-    setTimeout(() => {
-        FloatersService.getInstance().onNewAddressUncovered({ column: 10, row: 10 })
-    }, 100);
+    GameBoard.getInstance();
+    customElements.define(GameBoardElement.componentName, GameBoardElement);
+    customElements.define(ActionMenuElement.componentName, ActionMenuElement);
+    customElements.define(ConstructionProgressElement.componentName, ConstructionProgressElement);
+    customElements.define(OperationIndicatorElement.componentName, OperationIndicatorElement);
+    customElements.define(BuildingButtonElement.componentName, BuildingButtonElement);
+    customElements.define(GameFieldElement.componentName, GameFieldElement);
+    customElements.define(MenuBottomElement.componentName, MenuBottomElement);
+    customElements.define(MenuTrainsElement.componentName, MenuTrainsElement);
+    customElements.define(MenuTrainSetRoute.componentName, MenuTrainSetRoute);
+    customElements.define(TrainRunElement.componentName, TrainRunElement);
+    customElements.define(TrainAtom.elementName, TrainAtom);
+    BaseComponent.resolve?.(true)
 });

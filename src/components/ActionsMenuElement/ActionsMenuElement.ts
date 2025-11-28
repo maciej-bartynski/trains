@@ -155,6 +155,6 @@ class ActionMenuElement extends HTMLElement {
 
 }
 
-customElements.define(ActionMenuElement.componentName, ActionMenuElement);
+// customElements.define(ActionMenuElement.componentName, ActionMenuElement);
 
 export default ActionMenuElement

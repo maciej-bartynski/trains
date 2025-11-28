@@ -29,6 +29,6 @@ class TrainAtom extends HTMLElement {
     }
 }
 
-customElements.define(TrainAtom.elementName, TrainAtom);
+// customElements.define(TrainAtom.elementName, TrainAtom);
 
 export default TrainAtom;

@@ -304,8 +304,8 @@ class GameFieldElement extends HTMLElement {
             return;
         }
 
-        this.style.left = `${(address.column * Config.cellSizePx) + FloatersService.getInstance().scrollLeftOffsetPx}px`;
-        this.style.top = `${(address.row * Config.cellSizePx) + FloatersService.getInstance().scrollTopOffsetPx}px`;
+        this.style.left = `${(address.column * Config.cellSizePx) + FloatersService.getInstance().state.left}px`;
+        this.style.top = `${(address.row * Config.cellSizePx) + FloatersService.getInstance().state.top}px`;
         this.style.width = `${Config.cellSizePx}px`;
         this.style.height = `${Config.cellSizePx}px`;
         this.classList.add(`--${field.visibility}`);
@@ -403,7 +403,7 @@ class GameFieldElement extends HTMLElement {
     }
 }
 
-customElements.define(GameFieldElement.componentName, GameFieldElement);
+// customElements.define(GameFieldElement.componentName, GameFieldElement);
 
 export default GameFieldElement;
 

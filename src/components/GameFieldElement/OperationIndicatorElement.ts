@@ -191,6 +191,6 @@ class OperationIndicatorElement extends HTMLElement {
     }
 }
 
-customElements.define(OperationIndicatorElement.componentName, OperationIndicatorElement);
+// customElements.define(OperationIndicatorElement.componentName, OperationIndicatorElement);
 
 export default OperationIndicatorElement;

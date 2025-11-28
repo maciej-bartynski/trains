@@ -164,6 +164,6 @@ const innerHtmlText = `
     </div>
 `;
 
-customElements.define(MenuTrainSetRoute.componentName, MenuTrainSetRoute);
+// customElements.define(MenuTrainSetRoute.componentName, MenuTrainSetRoute);
 
 export default MenuTrainSetRoute;
