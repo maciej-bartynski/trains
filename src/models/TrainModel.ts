@@ -2,21 +2,21 @@ import GameBoard from "#src/GameBoard.js";
 import Address from "#src/types/Address.js";
 import Direction from "#src/types/Direction.js";
 import TrainRouteEvent from "#src/types/TrainTrespassingEvent.js";
-import TrainTrespassingLight from "#src/types/TrainTresspasingLight.js";
 import FieldModel from "./FieldModel.js";
-import AddressUtils from "#src/utils/AddressUtils.js";
-import GameFieldElement from "#src/components/GameFieldElement/GameFieldElement.js";
 import Service from "#src/framework/Service/Service.js";
+import RouteEventModel from "./RouteEventModel.js";
 
 interface TrainState {
     id: string;
     name: string;
     location: Address; // if equall to route[0].address, it's departuring.
     direction: Direction | null; // if null, it's Awaiting on node center. If route[0].from is null, it's departuring.
-    route: TrainRouteEvent[];
     journey: Array<TrainRouteEvent[]>;
+    routeCurrentEvent: number;
+    events: RouteEventModel[];
     destination: Address | null;
     randomColor: string;
+    trespassingProgress: number;
 }
 
 const colors = [
@@ -46,143 +46,133 @@ class TrainModel extends Service<TrainState> {
     private constructor(params: TrainState) {
         super();
         this.state = params;
-        this.onFieldListener = this.onFieldListener.bind(this);
-        this.setRoute = this.setRoute.bind(this);
-        this.toJSON = this.toJSON.bind(this);
+        console.log("const", params)
         this.setJourney = this.setJourney.bind(this);
+        this.toJSON = this.toJSON.bind(this);
+        this.requestTrespassingCurrentEvent = this.requestTrespassingCurrentEvent.bind(this);
+        this.onProgressEventListener = this.onProgressEventListener.bind(this);
     }
 
-    _routeReady = false;
+    private trespassingTimeout: number | null = null;
 
-    private _trespassingInProgress: number | null = null;
+    private trespassingInterval: number | null = null;
 
-    private async onFieldListener(field: FieldModel['state']) {
-        const fieldModel = GameBoard.getInstance().getField(field.address);
-        if (!fieldModel) return;
-        if (this.state.route.length === 0
-            && this.state.destination
-            && AddressUtils.isAddressEqual(this.state.destination, field.address)
-            && this._trespassingInProgress === null
-        ) {
-            const nextRoute = this.state.journey.shift();
-            if (nextRoute) this.setRoute({ route: nextRoute });
-        }
-
-        if (!this._routeReady || this._trespassingInProgress !== null) {
-            /** Possibly still preparing or already moving*/
+    private async onProgressEventListener(eventState: RouteEventModel['state']) {
+        if (this.trespassingTimeout) {
+            /** 
+             * Already in progress.
+            */
             return;
         }
 
-        const fieldEvent = field.events.find(event => event.id === this.state.id);
+        /**
+         * Clearing previous event:
+        */
+        const events = this.state.events;
+        const index = this.state.routeCurrentEvent;
 
-        if (!fieldEvent) {
+        const updatedEvent = events.find(ev => ev.state.order === eventState.order);
+        const currentEvent = events.find(ev => ev.state.order === index);
+
+        if (!currentEvent || (currentEvent !== updatedEvent)) {
+            /**
+             * Something went wrong.
+             */
             return
         }
 
-        const isCurrEv = this.state.route[0] && AddressUtils.isAddressEqual(fieldEvent.address, this.state.route[0]!.address);
-        const isNextEv = this.state.route[1] && AddressUtils.isAddressEqual(fieldEvent.address, this.state.route[1]!.address);
-
-        if (isCurrEv) {
-            const isAlreadyResolved = fieldEvent.to === this.state.direction;
-            if (isAlreadyResolved) {
-                return;
-            }
-            const hasGreenLight = fieldEvent.light === TrainTrespassingLight.Green;
-            if (!hasGreenLight) {
-                return;
-            }
-
-            const fieldElement = document.querySelector(`[data-key="${AddressUtils.toKey(this.state.location)}"]`) as GameFieldElement;
-            fieldElement.appendTrainAnimation({ from: fieldEvent.from, to: fieldEvent.to, trainId: this.state.id });
-
-            this._trespassingInProgress = setTimeout(() => {
-
-                this.state.direction = fieldEvent.to;
-                this._trespassingInProgress = null;
-
-                const nextField = this.state.route[1] ? GameBoard.getInstance().getField(this.state.route[1].address) : null;
-                nextField?.signalTrespassing({ trainId: this.state.id });
-
-                if (!this.state.route[1]) {
-                    this.state.location = field.address;
-                    this.state.route.shift();
-                    fieldModel.signalTrespassed({ trainId: this.state.id });
-                    fieldModel.unsubscribe(this.onFieldListener)
+        this.setState({
+            events: events.filter((ev, idx) => {
+                const isPastEvent = ev.state.order < index;
+                if (isPastEvent) {
+                    ev.clearSelf();
+                    return false;
                 }
-            }, fieldEvent.durationMiliseconds);
+                return true;
+            })
+        })
+
+        this.setState({
+            direction: currentEvent.state.from,
+            location: currentEvent.state.address
+        });
+
+        if (this.trespassingInterval === null) {
+            const trespassingIntervalMilisec = currentEvent.state.durationMiliseconds / 100;
+            let nextProgress = this.state.trespassingProgress ?? 0;
+            this.trespassingInterval = setInterval(() => {
+                nextProgress++;
+                // this.setState({
+                //     trespassingProgress: nextProgress
+                // });
+                if ((nextProgress >= 100) && this.trespassingInterval) {
+                    clearInterval(this.trespassingInterval);
+                    this.trespassingInterval = null;
+                    nextProgress = 0;
+                    // this.setState({
+                    //     trespassingProgress: 0
+                    // });
+                }
+            }, trespassingIntervalMilisec);
         }
 
-        if (isNextEv) {
-
-
-            const prevEv = this.state.route[0];
-            if (!prevEv) {
-                /** already handled */
-                return;
-            }
-            const isPrevResolved = prevEv.to === this.state.direction && AddressUtils.isAddressEqual(prevEv.address, this.state.location);
-            if (!isPrevResolved) {
-                /** Not yet here */
-                return;
-            }
-            const hasGreenLight = fieldEvent.light === TrainTrespassingLight.Green;
-            if (!hasGreenLight) {
-                return;
-            }
-
-            const prevField = GameBoard.getInstance().getField(this.state.location);
-            if (!prevField) {
-                /** not possible */
-                return
-            }
-
-            this.state.location = fieldEvent.address;
-            this.state.direction = fieldEvent.from;
-            this.state.route.shift();
-            fieldModel.signalTrespassing({ trainId: this.state.id });
-            prevField.signalTrespassed({ trainId: this.state.id });
-            prevField.unsubscribe(this.onFieldListener)
-        }
+        this.trespassingTimeout = setTimeout(() => {
+            currentEvent.unsubscribe(this.onProgressEventListener);
+            currentEvent.onAfter();
+            this.setState({
+                direction: currentEvent.state.to,
+                routeCurrentEvent: index + 1,
+            });
+            this.trespassingTimeout = null;
+            this.requestTrespassingCurrentEvent();
+        }, currentEvent.state.durationMiliseconds);
     }
 
     public setJourney(params: {
         journey: Array<TrainRouteEvent[]>
     }) {
-        const journeyWithourFirstRoute = [...params.journey];
-        const firstRoute = journeyWithourFirstRoute.shift();
-        if (firstRoute) {
-            this.setState({ journey: journeyWithourFirstRoute })
-            this.setRoute(({ route: firstRoute }))
+        const journeyWithoutFirstRoute = [...params.journey];
+        const firstRoute = journeyWithoutFirstRoute.shift();
+
+        if (firstRoute && !this.state.events.length) {
+            const destination = firstRoute[firstRoute.length - 1]?.address;
+            if (!destination) return;
+            const events = firstRoute.map((data, order) => {
+                const event = RouteEventModel.bookEvent({
+                    ...data,
+                    trainId: this.state.id,
+                    order,
+                });
+                return event;
+            });
+
+            if (events.every(ev => !!ev)) {
+                this.setState({
+                    events,
+                    journey: journeyWithoutFirstRoute,
+                    routeCurrentEvent: 0,
+                    destination,
+                })
+
+                setTimeout(() => {
+                    this.requestTrespassingCurrentEvent();
+                }, 150)
+            }
         }
     }
 
-    public setRoute(params: { route: TrainRouteEvent[] }) {
-        const { route } = params;
-        this.setState({
-            route
-        })
-        this._routeReady = false;
-
-        const destination = this.state.route[this.state.route.length - 1]?.address;
-        if (!destination) return;
-        this.setState({
-            destination
-        })
-
-        this.state.route.forEach((event) => {
-            const field = GameBoard.getInstance().getField(event.address);
-            if (!field) {
-                return;
-            }
-            field.subscribe(this.onFieldListener);
-            field.bookTrainRoute({ event, id: this.state.id });
-        });
-
-        this._routeReady = true;
-
-        const nextField = this.state.route[0] ? GameBoard.getInstance().getField(this.state.route[0].address) : null;
-        if (nextField) {
-            nextField.signalTrespassing({ trainId: this.state.id });
+    private requestTrespassingCurrentEvent() {
+        const currentEvent = this.state.events.find(ev => ev.state.order === this.state.routeCurrentEvent);
+        if (currentEvent) {
+            currentEvent.subscribe(this.onProgressEventListener);
+            currentEvent.onBefore();
+        } else {
+            this.setState({
+                events: []
+            })
+            this.setJourney({
+                journey: this.state.journey
+            })
         }
     }
 
@@ -199,11 +189,13 @@ class TrainModel extends Service<TrainState> {
             id,
             name,
             location: address,
-            route: [],
+            events: [],
+            routeCurrentEvent: 0,
             journey: [],
             direction: null,
             destination: null,
             randomColor,
+            trespassingProgress: 0
         });
 
         return newModel;

@@ -16,7 +16,9 @@ class TrainAtom extends HTMLElement {
 
     async connectedCallback() {
         const html = await TemplateHepler.handleAssets(TrainAtom.templateName);
-        this.appendChild(html);
+        if (!(this.innerHTML || "").trim()) {
+            this.appendChild(html);
+        }
         const rootColor = this.getAttribute(TrainAtom.attributeColor);
         if (rootColor) {
             this.style.setProperty('--light-color', rootColor);
@@ -28,7 +30,5 @@ class TrainAtom extends HTMLElement {
         return trainElement;
     }
 }
-
-// customElements.define(TrainAtom.elementName, TrainAtom);
 
 export default TrainAtom;

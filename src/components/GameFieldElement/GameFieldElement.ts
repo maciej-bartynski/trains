@@ -63,48 +63,14 @@ class GameFieldElement extends HTMLElement {
         this.renderBackground = this.renderBackground.bind(this);
         this.subscribeAdjacnetFields = this.subscribeAdjacnetFields.bind(this);
         this.appendTrainAnimation = this.appendTrainAnimation.bind(this);
-        this.subscribeTrafficLights = this.subscribeTrafficLights.bind(this);
         this.appenTrainElement = this.appenTrainElement.bind(this);
     }
 
-    private subscribeTrafficLights(field: FieldModel) {
-        const lightElementsMap = {
-            [Direction.Top]: this.topLightElement,
-            [Direction.Bottom]: this.bottomLightElement,
-            [Direction.Left]: this.leftLightElement,
-            [Direction.Right]: this.rightLightElement
-        }
-        if (field.state.events[0] && (Object.values(field.state.railwayOrientation).filter(item => !!item).length > 2) && field.state.building === BuildingKind.RailwayTrack) {
-            Object.entries(field.state.railwayOrientation).forEach(entry => {
-                const [direction, hasRoute] = entry as [Direction, boolean];
-                if (hasRoute) {
-
-                    const event = field.state.events[0]!
-                    const isGreenLight = event.from === direction;
-
-                    if (isGreenLight) {
-                        lightElementsMap[direction].classList.remove('--stop')
-                        lightElementsMap[direction].classList.add('--go');
-                    } else {
-                        lightElementsMap[direction].classList.add('--stop')
-                        lightElementsMap[direction].classList.remove('--go')
-                    }
-                }
-            })
-        }
-    }
-
     public appendTrainAnimation(params: { from: Direction | null, to: Direction | null, trainId: string }) {
-        const train = GameBoard.getInstance().getTrain(params.trainId);
-        const color = train?.state.randomColor ?? 'purple';
-
         const prevAnimation = document.querySelector(`[data-train="${params.trainId}"]`);
         prevAnimation?.remove();
-
         const trainAnimation = document.createElement(TrainRunElement.componentName) as TrainRunElement;
-        trainAnimation.setRoute(params);
         trainAnimation.setAttribute('data-train', params.trainId)
-        trainAnimation.setColor(color);
         this.layerRouteAnimationElement.appendChild(trainAnimation);
     }
 
@@ -333,7 +299,7 @@ class GameFieldElement extends HTMLElement {
             this.renderTrackOrBuilding(field);
             this.renderConstructionSite(field);
             this.renderOperationIndicator(field);
-            this.subscribeTrafficLights(field)
+            // this.subscribeTrafficLights(field)
         }
     }
 

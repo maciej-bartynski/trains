@@ -1,6 +1,7 @@
 import GameFieldElement from "./components/GameFieldElement/GameFieldElement.js";
 import Service from "./framework/Service/Service.js";
 import FieldModel from "./models/FieldModel.js";
+import RouteEventModel from "./models/RouteEventModel.js";
 import TrainModel from "./models/TrainModel.js";
 import ActionsMenuService from "./service/ActionsMenuService/ActionsMenuService.js";
 import FloatersService from "./service/FloatersService/FloatersService.js";
@@ -14,11 +15,10 @@ import AdjacentFields from "./utils/AdjacentFields.js";
 interface GameBoardState {
     fields: Record<string, FieldModel>;
     trains: Record<string, TrainModel>;
+    events: Record<string, RouteEventModel>;
     furthestRow: number;
     furthestColumn: number;
 }
-
-type GameBoardListener = (params: GameBoard) => void;
 
 class GameBoard extends Service<GameBoardState> {
 
@@ -39,6 +39,7 @@ class GameBoard extends Service<GameBoardState> {
     state: GameBoardState = {
         fields: {},
         trains: {},
+        events: {},
         furthestRow: 0,
         furthestColumn: 0,
     }
@@ -49,8 +50,9 @@ class GameBoard extends Service<GameBoardState> {
     }
 
     private configure(game: {
-        fields: FieldModel,
-        trains: TrainModel['state'],
+        fields: Record<string, FieldModel['state']>,
+        trains: Record<string, TrainModel['state']>,
+        events: Record<string, RouteEventModel['state']>,
         furthestColumn: number,
         furthestRow: number,
     } | null) {
@@ -61,9 +63,33 @@ class GameBoard extends Service<GameBoardState> {
             Object.entries(game.trains).forEach(([key, train]) => {
                 this.state.trains[key] = TrainModel.fromJSON(train);
             });
+            // Object.entries(game.events).forEach(([key, event]) => {
+            //     this.state.events[key] = RouteEventModel.fromJSON(event);
+            // });
             this.state.furthestColumn = game.furthestColumn;
             this.state.furthestRow = game.furthestRow;
         }
+    }
+
+    public setEvent(event: RouteEventModel) {
+        this.setState({
+            events: {
+                ...this.state.events,
+                [event.state.trainId]: event
+            }
+        })
+    }
+
+    public getEvent(trainId: string) {
+        return this.state.events[trainId]
+    }
+
+    public deleteEvent(trainId: string) {
+        const nextEvents = this.state.events;
+        delete nextEvents[trainId];
+        this.setState({
+            events: nextEvents
+        })
     }
 
     public setTrain(train: TrainModel) {

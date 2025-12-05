@@ -1,8 +1,14 @@
 import GameBoard from "#src/GameBoard.js";
+import TrainModel from "#src/models/TrainModel.js";
 import Direction from "#src/types/Direction.js";
 import DirectionUtils from "#src/utils/DirectionUtils.js";
+import GameFieldElement from "../GameFieldElement/GameFieldElement.js";
 
 class TrainRunElement extends HTMLElement {
+    static dataTrainAttr = 'data-train';
+
+    static observedAttributes = [TrainRunElement.dataTrainAttr];
+
     static componentName = 'train-run-element';
 
     private from: Direction | null = null;
@@ -46,25 +52,19 @@ class TrainRunElement extends HTMLElement {
 
     constructor() {
         super();
-        this.setRoute = this.setRoute.bind(this);
         this.render = this.render.bind(this);
     }
 
-    color: string = 'purple';
+    render(trainState: TrainModel['state']) {
+        this.trainEl.setAttribute('data-color', trainState.randomColor);
+        const event = trainState.events.find(ev => ev.state.order === trainState.routeCurrentEvent);
 
-    setColor(c: string) {
-        this.color = c;
-        this.trainEl.setAttribute('data-color', c)
-    }
+        this.from = event?.state.from ?? null;
+        this.to = event?.state.to ?? null;
 
-    setRoute(params: { from: Direction | null, to: Direction | null }) {
-        const { from, to } = params;
-        this.from = from;
-        this.to = to;
-        this.render();
-    }
-
-    render() {
+        const field = event?.state.address ? GameFieldElement.selectFieldByAddress(event?.state.address) : null;
+        if (!field) return;
+        field.appenTrainElement(this)
 
         if (this.from && this.to) {
             this.classList.add(`from-${this.from}`);
@@ -112,20 +112,41 @@ class TrainRunElement extends HTMLElement {
         }
 
         if (!this.to && !this.from) {
-            //this.classList.add(`from-${DirectionUtils.OpositeDirection[this.to]}`);
             this.appendChild(this.stopEl);
-            // this.startEl.classList.add(`from-${DirectionUtils.OpositeDirection[this.to]}`);
             this.stopEl.appendChild(this.trainEl);
             this.trainEl.classList.remove('--moving');
         }
     }
 
+    attributeChangedCallback(name: string, oldValue: string, newValue: string) {
+        if (name === TrainRunElement.dataTrainAttr) {
+            const train = GameBoard.getInstance().getTrain(newValue);
+            const prevTrain = GameBoard.getInstance().getTrain(oldValue);
+            if (train) {
+                train.subscribe(this.render)
+            }
+
+            if (prevTrain) {
+                prevTrain.unsubscribe(this.render)
+            }
+        }
+    }
 
     connectedCallback() {
-
+        const trainId = this.getAttribute(TrainRunElement.dataTrainAttr);
+        const train = trainId ? GameBoard.getInstance().getTrain(trainId) : null;
+        if (train) {
+            train.subscribe(this.render);
+        }
     }
 
     disconnectedCallback() {
+        const trainId = this.getAttribute(TrainRunElement.dataTrainAttr);
+        const train = trainId ? GameBoard.getInstance().getTrain(trainId) : null;
+        if (train) {
+            train.subscribe(this.render)
+        }
+
         this.removeAttribute('class');
         this.innerHTML = '';
     }
@@ -134,7 +155,7 @@ class TrainRunElement extends HTMLElement {
         if (!trainId) {
             return null
         }
-        return (parent ?? document).querySelector(`${TrainRunElement.componentName}[data-train="${trainId}"]`);
+        return (parent ?? document).querySelector(`${TrainRunElement.componentName}[${TrainRunElement.dataTrainAttr}="${trainId}"]`);
     }
 
     static createTrainElement(params: {
@@ -143,12 +164,7 @@ class TrainRunElement extends HTMLElement {
         const train = GameBoard.getInstance().getTrain(params.trainId);
         if (train) {
             const trainAnimation = document.createElement(TrainRunElement.componentName) as TrainRunElement;
-            trainAnimation.setRoute({
-                from: train.state.direction,
-                to: train.state.direction
-            });
-            trainAnimation.setAttribute('data-train', params.trainId)
-            trainAnimation.setColor(train.state.randomColor);
+            trainAnimation.setAttribute(TrainRunElement.dataTrainAttr, params.trainId)
             return trainAnimation;
         }
     }

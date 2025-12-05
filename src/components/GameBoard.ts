@@ -64,7 +64,7 @@ class GameBoardElement extends StatefullComponent<GameBoardElementState, GameBoa
                 });
 
                 if (trainAnimation) {
-                    fieldElement.appenTrainElement(trainAnimation)
+                    fieldElement.appenTrainElement(trainAnimation);
                 }
             }
 

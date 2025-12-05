@@ -11,6 +11,7 @@ import TrainRouteEvent from "#src/types/TrainTrespassingEvent.js";
 import TrainTrespassingLight from "#src/types/TrainTresspasingLight.js";
 import AdjacentFields from "#src/utils/AdjacentFields.js";
 import Terrain from "#src/utils/Terrain.js";
+import RouteEventModel from "./RouteEventModel";
 
 interface FieldState {
     constructionSite: ConstructionSite | null;
@@ -22,10 +23,9 @@ interface FieldState {
     railwayOrientation: Orientation,
     railwayOrientationSquareVariant: OrientationSquareVariant | null,
     building: BuildingKind | null,
-    events: (TrainRouteEvent & { id: string })[],
+    // events: (TrainRouteEvent & { id: string })[],
+    events: RouteEventModel[]
 }
-
-type FieldListener = (state: FieldModel) => void;
 
 class FieldModel extends Service<FieldState> {
     private _constructionInterval: number | null = null;
@@ -39,10 +39,12 @@ class FieldModel extends Service<FieldState> {
         this.uncover = this.uncover.bind(this);
         this.buildRailway = this.buildRailway.bind(this);
         this.buildRailwayStation = this.buildRailwayStation.bind(this);
-        this.bookTrainRoute = this.bookTrainRoute.bind(this);
-        this.signalTrespassed = this.signalTrespassed.bind(this);
-        this.resolveTrainRoutes = this.resolveTrainRoutes.bind(this);
-        this.signalTrespassing = this.signalTrespassing.bind(this);
+        this.onEventUpdate = this.onEventUpdate.bind(this);
+        this.registerEvent = this.registerEvent.bind(this)
+        // this.bookTrainRoute = this.bookTrainRoute.bind(this);
+        // this.signalTrespassed = this.signalTrespassed.bind(this);
+        // this.resolveTrainRoutes = this.resolveTrainRoutes.bind(this);
+        // this.signalTrespassing = this.signalTrespassing.bind(this);
     }
 
     public uncover() {
@@ -374,56 +376,81 @@ class FieldModel extends Service<FieldState> {
         }
     }
 
-    private _loopIsRunning = false;
-    private async resolveTrainRoutes() {
-        if (this._loopIsRunning) {
-            return;
+    public onEventUpdate(eventState: RouteEventModel['state']) {
+        const event = this.state.events.find(ev => ev.state.trainId === eventState.trainId);
+        if (!event) {
+            return
         }
-        this._loopIsRunning = true;
+
         let order = 0;
+
         for (const event of this.state.events) {
-            if (order === 0) {
-                event.light = TrainTrespassingLight.Green;
-            } else {
-                event.light = TrainTrespassingLight.Red;
+            if (order === 0 && event.state.light !== TrainTrespassingLight.Green) {
+                event.setState({ light: TrainTrespassingLight.Green });
+            }
+            if (order > 0 && event.state.light === TrainTrespassingLight.Green) {
+                event.setState({ light: TrainTrespassingLight.Red });
             }
             order += 1;
         }
-        this._loopIsRunning = false;
-        this._notifyListeners();
     }
 
-    public signalTrespassing(params: { trainId: string }) {
-        this.resolveTrainRoutes();
-    }
-
-    public signalTrespassed(params: { trainId: string }) {
-        const { trainId } = params;
-        let foundEvent = false;
-
+    public registerEvent(routeEvent: RouteEventModel) {
         this.setState({
-            events: this.state.events.filter(event => {
-
-                if (event.id === trainId && !foundEvent) {
-                    foundEvent = true;
-                    return false;
-                }
-                return true;
-            })
-        })
-
-        this.resolveTrainRoutes();
+            events: [...this.state.events, routeEvent]
+        });
     }
 
-    public bookTrainRoute(params: {
-        event: TrainRouteEvent,
-        id: string
-    }) {
-        const { event, id } = params;
-        this.setState({
-            events: [...this.state.events, { ...event, light: TrainTrespassingLight.Red, id }]
-        })
-    }
+    // private _loopIsRunning = false;
+    // private async resolveTrainRoutes() {
+    //     if (this._loopIsRunning) {
+    //         return;
+    //     }
+    //     this._loopIsRunning = true;
+    //     let order = 0;
+    //     for (const event of this.state.events) {
+    //         if (order === 0) {
+    //             event.light = TrainTrespassingLight.Green;
+    //         } else {
+    //             event.light = TrainTrespassingLight.Red;
+    //         }
+    //         order += 1;
+    //     }
+    //     this._loopIsRunning = false;
+    //     this._notifyListeners();
+    // }
+
+    // public signalTrespassing(params: { trainId: string }) {
+    //     this.resolveTrainRoutes();
+    // }
+
+    // public signalTrespassed(params: { trainId: string }) {
+    //     const { trainId } = params;
+    //     let foundEvent = false;
+
+    //     this.setState({
+    //         events: this.state.events.filter(event => {
+
+    //             if (event.id === trainId && !foundEvent) {
+    //                 foundEvent = true;
+    //                 return false;
+    //             }
+    //             return true;
+    //         })
+    //     })
+
+    //     this.resolveTrainRoutes();
+    // }
+
+    // public bookTrainRoute(params: {
+    //     event: TrainRouteEvent,
+    //     id: string
+    // }) {
+    //     const { event, id } = params;
+    //     this.setState({
+    //         events: [...this.state.events, { ...event, light: TrainTrespassingLight.Red, id }]
+    //     })
+    // }
 
     static touch(address: Address) {
         return FieldModel.fromJSON({
