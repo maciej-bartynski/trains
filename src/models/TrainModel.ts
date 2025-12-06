@@ -50,20 +50,18 @@ class TrainModel extends Service<TrainState> {
         this.toJSON = this.toJSON.bind(this);
         this.requestTrespassingCurrentEvent = this.requestTrespassingCurrentEvent.bind(this);
         this.onProgressEventListener = this.onProgressEventListener.bind(this);
+        this.addRoute = this.addRoute.bind(this);
     }
 
     private trespassingInterval: number | null = null;
 
     private async onProgressEventListener(eventState: RouteEventModel['state']) {
         if (this.trespassingInterval) {
-            console.log("landed here 1")
             /** 
              * Already in progress.
             */
             return;
         }
-
-        console.log("pass 1")
 
         const events = this.state.events;
         const index = this.state.routeCurrentEvent;
@@ -72,22 +70,16 @@ class TrainModel extends Service<TrainState> {
         const currentEvent = events.find(ev => ev.state.order === index);
 
         if (!currentEvent || (currentEvent !== updatedEvent)) {
-            console.log("landed here 2")
             /**
              * Something went wrong.
              */
             return
         }
 
-        console.log("pass 2")
-
         if (currentEvent.state.light !== TrainTrespassingLight.Green) {
-            console.log("landed here 3")
             /** wait */
             return;
         }
-
-        console.log("pass 3")
 
         /**
          * Clearing previous event:
@@ -132,6 +124,17 @@ class TrainModel extends Service<TrainState> {
                 }
             }, trespassingIntervalMilisec);
         }
+    }
+
+    public addRoute(params: {
+        route: TrainRouteEvent[]
+    }) {
+        this.setState({
+            journey: [
+                ...this.state.journey,
+                params.route
+            ]
+        })
     }
 
     public setJourney(params: {

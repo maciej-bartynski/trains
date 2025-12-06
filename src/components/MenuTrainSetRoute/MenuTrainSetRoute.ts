@@ -1,6 +1,7 @@
 import TrainAtom from "#src/atoms/TrainAtom/TrainAtom.js";
 import StatefullComponent from "#src/framework/StatefullComponent/StatefullComponent.js";
 import GameBoard from "#src/GameBoard.js";
+import TrainModel from "#src/models/TrainModel.js";
 import actionsMenuService from "#src/service/ActionsMenuService/index.js";
 import ActionsMenuOptionName from "#src/service/ActionsMenuService/types.js";
 import Address from "#src/types/Address.js";
@@ -41,14 +42,43 @@ class MenuTrainSetRoute extends StatefullComponent<ElementState, ElementProps> {
         this.contentSection = this.querySelector(`.${classNames.content}`) as HTMLElement;
     }
 
+    private trainListener(trainState: TrainModel['state']) {
+
+    }
+
     constructor() {
         super();
+        this.trainListener = this.trainListener.bind(this);
+
         actionsMenuService.subscribe((actions) => {
             if (actions.action?.type === ActionsMenuOptionName.TrainSetRoute) {
-                this.setProps({
-                    trainId: actions.action.payload.trainId,
-                    routes: actions.action.payload.routes
-                })
+                const currentTrain = GameBoard.getInstance().getTrain(actions.action.payload.trainId);
+                let previousTrain: TrainModel | undefined;
+                const prevTrainId = this.getProps()?.trainId;
+
+                if (prevTrainId) {
+                    previousTrain = GameBoard.getInstance().getTrain(prevTrainId);
+                }
+
+                if (previousTrain) {
+                    previousTrain.unsubscribe(this.render);
+                }
+
+                if (currentTrain) {
+                    this.setProps({
+                        trainId: actions.action.payload.trainId
+                    })
+                    currentTrain.subscribe(this.render);
+                    actions.action.payload.routes?.forEach(route => {
+                        currentTrain.addRoute({
+                            route
+                        })
+                    })
+                }
+                // this.setProps({
+                //     trainId: actions.action.payload.trainId,
+                //     routes: actions.action.payload.routes
+                // })
             } else {
                 this.setProps(undefined)
             }
@@ -64,7 +94,8 @@ class MenuTrainSetRoute extends StatefullComponent<ElementState, ElementProps> {
             this.style.display = 'block';
             trainAtom?.setAttribute('data-color', train.state.randomColor);
             this.desinationsList.innerHTML = '';
-            props?.routes?.forEach(route => {
+            // props?.routes?.forEach(route => {
+            train.state.journey.forEach(route => {
                 const destinationAddress = route[route.length - 1]?.address;
                 if (destinationAddress) {
                     const listItem = this.destinationsListItem.cloneNode(true) as HTMLLIElement;
@@ -92,15 +123,16 @@ class MenuTrainSetRoute extends StatefullComponent<ElementState, ElementProps> {
                 }
             });
 
-            if (props?.routes?.length) {
+            // if (props?.routes?.length) {
+            if (train.state.journey.length) {
                 this.contentSection.appendChild(this.goCta);
                 this.goCta.onclick = () => {
-                    const firstRoute = props.routes?.[0];
+                    const firstRoute = train.state.journey[0];
                     const firstDestination = firstRoute
                         ? firstRoute[firstRoute.length - 1]?.address
                         : null;
-                    if (firstDestination && props.routes) {
-                        train.setJourney({ journey: props.routes })
+                    if (firstDestination && train.state.journey.length) {
+                        train.setJourney({ journey: train.state.journey })
                     }
                 }
             } else {
