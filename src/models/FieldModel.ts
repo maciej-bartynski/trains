@@ -1,4 +1,6 @@
 import Service from "#src/framework/Service/Service.js";
+import GameBoard from "#src/GameBoard.js";
+import GameBoardEl from "#src/components/GameBoard.js";
 import Address from "#src/types/Address.js";
 import BuildingKind from "#src/types/BuildingKind.js";
 import ConstructionSite from "#src/types/ConstructionSite.js";
@@ -7,7 +9,6 @@ import Direction from "#src/types/Direction.js";
 import FieldVisibility from "#src/types/FieldVisibility.js";
 import Orientation, { OrientationHorizontal, OrientationSquare, OrientationSquareVariant, OrientationVertical } from "#src/types/Orientation.js";
 import TerrainKind from "#src/types/TerrainKind.js";
-import TrainRouteEvent from "#src/types/TrainTrespassingEvent.js";
 import TrainTrespassingLight from "#src/types/TrainTresspasingLight.js";
 import AdjacentFields from "#src/utils/AdjacentFields.js";
 import Terrain from "#src/utils/Terrain.js";
@@ -23,7 +24,6 @@ interface FieldState {
     railwayOrientation: Orientation,
     railwayOrientationSquareVariant: OrientationSquareVariant | null,
     building: BuildingKind | null,
-    // events: (TrainRouteEvent & { id: string })[],
     events: RouteEventModel[]
 }
 
@@ -41,10 +41,6 @@ class FieldModel extends Service<FieldState> {
         this.buildRailwayStation = this.buildRailwayStation.bind(this);
         this.onEventUpdate = this.onEventUpdate.bind(this);
         this.registerEvent = this.registerEvent.bind(this)
-        // this.bookTrainRoute = this.bookTrainRoute.bind(this);
-        // this.signalTrespassed = this.signalTrespassed.bind(this);
-        // this.resolveTrainRoutes = this.resolveTrainRoutes.bind(this);
-        // this.signalTrespassing = this.signalTrespassing.bind(this);
     }
 
     public uncover() {
@@ -377,80 +373,36 @@ class FieldModel extends Service<FieldState> {
     }
 
     public onEventUpdate(eventState: RouteEventModel['state']) {
-        const event = this.state.events.find(ev => ev.state.trainId === eventState.trainId);
-        if (!event) {
-            return
-        }
 
         let order = 0;
 
         for (const event of this.state.events) {
             if (order === 0 && event.state.light !== TrainTrespassingLight.Green) {
-                event.setState({ light: TrainTrespassingLight.Green });
+                event.lightGreen();
             }
             if (order > 0 && event.state.light === TrainTrespassingLight.Green) {
-                event.setState({ light: TrainTrespassingLight.Red });
+                event.lightRed();
             }
             order += 1;
         }
+    }
+
+    public unregisterEvent(routeEvent: RouteEventModel) {
+        routeEvent.unsubscribe(this.onEventUpdate)
+        this.setState({
+            events: this.state.events.filter(event => {
+                return event !== routeEvent;
+            })
+        });
+        this.onEventUpdate(routeEvent.state)
     }
 
     public registerEvent(routeEvent: RouteEventModel) {
         this.setState({
             events: [...this.state.events, routeEvent]
         });
+        routeEvent.subscribe(this.onEventUpdate)
     }
-
-    // private _loopIsRunning = false;
-    // private async resolveTrainRoutes() {
-    //     if (this._loopIsRunning) {
-    //         return;
-    //     }
-    //     this._loopIsRunning = true;
-    //     let order = 0;
-    //     for (const event of this.state.events) {
-    //         if (order === 0) {
-    //             event.light = TrainTrespassingLight.Green;
-    //         } else {
-    //             event.light = TrainTrespassingLight.Red;
-    //         }
-    //         order += 1;
-    //     }
-    //     this._loopIsRunning = false;
-    //     this._notifyListeners();
-    // }
-
-    // public signalTrespassing(params: { trainId: string }) {
-    //     this.resolveTrainRoutes();
-    // }
-
-    // public signalTrespassed(params: { trainId: string }) {
-    //     const { trainId } = params;
-    //     let foundEvent = false;
-
-    //     this.setState({
-    //         events: this.state.events.filter(event => {
-
-    //             if (event.id === trainId && !foundEvent) {
-    //                 foundEvent = true;
-    //                 return false;
-    //             }
-    //             return true;
-    //         })
-    //     })
-
-    //     this.resolveTrainRoutes();
-    // }
-
-    // public bookTrainRoute(params: {
-    //     event: TrainRouteEvent,
-    //     id: string
-    // }) {
-    //     const { event, id } = params;
-    //     this.setState({
-    //         events: [...this.state.events, { ...event, light: TrainTrespassingLight.Red, id }]
-    //     })
-    // }
 
     static touch(address: Address) {
         return FieldModel.fromJSON({

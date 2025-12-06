@@ -84,6 +84,7 @@ train-run-element .train {
     left: calc(0% - 12.5px);
 }
 
+/* 
 train-run-element .stright-route {
     animation: stright-route-animation 1s linear forwards;
 }
@@ -152,4 +153,4 @@ train-run-element .turn-right-route {
     to {
         transform: rotate(90deg);
     }
-}
+} */

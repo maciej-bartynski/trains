@@ -59,11 +59,14 @@ class TrainRunElement extends HTMLElement {
         this.trainEl.setAttribute('data-color', trainState.randomColor);
         const event = trainState.events.find(ev => ev.state.order === trainState.routeCurrentEvent);
 
+        const progressPercentage = trainState.trespassingProgress;
+
         this.from = event?.state.from ?? null;
         this.to = event?.state.to ?? null;
 
         const field = event?.state.address ? GameFieldElement.selectFieldByAddress(event?.state.address) : null;
         if (!field) return;
+
         field.appenTrainElement(this)
 
         if (this.from && this.to) {
@@ -71,44 +74,79 @@ class TrainRunElement extends HTMLElement {
             this.trainEl.classList.add('--moving');
 
             if (DirectionUtils.isTurnLeft(this.from, this.to)) {
-                this.appendChild(this.turnLeftRouteEl);
+                if (!this.contains(this.turnLeftRouteEl)) {
+                    this.appendChild(this.turnLeftRouteEl);
+                }
+                if (!this.turnLeftRouteEl.contains(this.trainEl)) {
+                    this.turnLeftRouteEl.appendChild(this.trainEl);
+                }
+
+
                 this.turnLeftRouteEl.classList.add(`from-${this.from}`);
-                this.turnLeftRouteEl.appendChild(this.trainEl);
+                this.turnLeftRouteEl.style.transform = `rotate(${-90 * (progressPercentage / 100)}deg)`;
             }
 
             else if (DirectionUtils.isTurnRight(this.from, this.to)) {
-                this.appendChild(this.turnRightRouteEl);
+                if (!this.contains(this.turnRightRouteEl)) {
+                    this.appendChild(this.turnRightRouteEl);
+                }
+                if (!this.turnRightRouteEl.contains(this.trainEl)) {
+                    this.turnRightRouteEl.appendChild(this.trainEl);
+                }
                 this.turnRightRouteEl.classList.add(`from-${this.from}`);
-                this.turnRightRouteEl.appendChild(this.trainEl);
+                this.turnRightRouteEl.style.transform = `rotate(${90 * (progressPercentage / 100)}deg)`;
             }
 
             else if (DirectionUtils.isHorizontalAxis(this.from, this.to)) {
-                this.appendChild(this.strightRouteEl);
+                if (!this.contains(this.strightRouteEl)) {
+                    this.appendChild(this.strightRouteEl);
+                }
+                if (!this.strightRouteEl.contains(this.trainEl)) {
+                    this.strightRouteEl.appendChild(this.trainEl);
+                }
                 this.strightRouteEl.classList.add(`from-${this.from}`);
-                this.strightRouteEl.appendChild(this.trainEl);
+                this.strightRouteEl.style.transform = `translateX(${progressPercentage}%)`;
             }
 
             else if (DirectionUtils.isVerticalAxis(this.from, this.to)) {
-                this.appendChild(this.strightRouteEl);
+                if (!this.contains(this.strightRouteEl)) {
+                    this.appendChild(this.strightRouteEl);
+                }
+                if (!this.strightRouteEl.contains(this.trainEl)) {
+                    this.strightRouteEl.appendChild(this.trainEl);
+                }
                 this.strightRouteEl.classList.add(`from-${this.from}`);
-                this.strightRouteEl.appendChild(this.trainEl);
+                this.strightRouteEl.style.transform = `translateX(${progressPercentage}%)`;
             }
         }
 
         if (this.from && !this.to) {
             this.classList.add(`from-${this.from}`);
-            this.appendChild(this.stopEl);
+            if (!this.contains(this.stopEl)) {
+                this.appendChild(this.stopEl);
+            }
             this.stopEl.classList.add(`from-${this.from}`);
-            this.stopEl.appendChild(this.trainEl);
-            this.trainEl.classList.remove('--moving');
+            if (!this.stopEl.contains(this.trainEl)) {
+                this.stopEl.appendChild(this.trainEl);
+            }
+            this.stopEl.style.transform = `translateX(${progressPercentage / 2}%)`;
+            if (progressPercentage >= 100) {
+                this.trainEl.classList.remove('--moving');
+            }
         }
 
         if (this.to && !this.from) {
-            this.classList.add(`from-${DirectionUtils.OpositeDirection[this.to]}`);
-            this.appendChild(this.startEl);
-            this.startEl.classList.add(`from-${DirectionUtils.OpositeDirection[this.to]}`);
-            this.startEl.appendChild(this.trainEl);
             this.trainEl.classList.add('--moving');
+            this.classList.remove('from-top', 'from-bottom', 'from-left', 'from-right');
+            this.classList.add(`from-${DirectionUtils.OpositeDirection[this.to]}`);
+            if (!this.contains(this.startEl)) {
+                this.appendChild(this.startEl);
+            }
+            this.startEl.classList.add(`from-${DirectionUtils.OpositeDirection[this.to]}`);
+            if (!this.startEl.contains(this.trainEl)) {
+                this.startEl.appendChild(this.trainEl);
+            }
+            this.startEl.style.transform = `translateX(${50 + (progressPercentage / 2)}%)`;
         }
 
         if (!this.to && !this.from) {

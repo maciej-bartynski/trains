@@ -2,9 +2,9 @@ import GameBoard from "#src/GameBoard.js";
 import Address from "#src/types/Address.js";
 import Direction from "#src/types/Direction.js";
 import TrainRouteEvent from "#src/types/TrainTrespassingEvent.js";
-import FieldModel from "./FieldModel.js";
 import Service from "#src/framework/Service/Service.js";
 import RouteEventModel from "./RouteEventModel.js";
+import TrainTrespassingLight from "#src/types/TrainTresspasingLight.js";
 
 interface TrainState {
     id: string;
@@ -46,28 +46,25 @@ class TrainModel extends Service<TrainState> {
     private constructor(params: TrainState) {
         super();
         this.state = params;
-        console.log("const", params)
         this.setJourney = this.setJourney.bind(this);
         this.toJSON = this.toJSON.bind(this);
         this.requestTrespassingCurrentEvent = this.requestTrespassingCurrentEvent.bind(this);
         this.onProgressEventListener = this.onProgressEventListener.bind(this);
     }
 
-    private trespassingTimeout: number | null = null;
-
     private trespassingInterval: number | null = null;
 
     private async onProgressEventListener(eventState: RouteEventModel['state']) {
-        if (this.trespassingTimeout) {
+        if (this.trespassingInterval) {
+            console.log("landed here 1")
             /** 
              * Already in progress.
             */
             return;
         }
 
-        /**
-         * Clearing previous event:
-        */
+        console.log("pass 1")
+
         const events = this.state.events;
         const index = this.state.routeCurrentEvent;
 
@@ -75,12 +72,26 @@ class TrainModel extends Service<TrainState> {
         const currentEvent = events.find(ev => ev.state.order === index);
 
         if (!currentEvent || (currentEvent !== updatedEvent)) {
+            console.log("landed here 2")
             /**
              * Something went wrong.
              */
             return
         }
 
+        console.log("pass 2")
+
+        if (currentEvent.state.light !== TrainTrespassingLight.Green) {
+            console.log("landed here 3")
+            /** wait */
+            return;
+        }
+
+        console.log("pass 3")
+
+        /**
+         * Clearing previous event:
+        */
         this.setState({
             events: events.filter((ev, idx) => {
                 const isPastEvent = ev.state.order < index;
@@ -102,30 +113,25 @@ class TrainModel extends Service<TrainState> {
             let nextProgress = this.state.trespassingProgress ?? 0;
             this.trespassingInterval = setInterval(() => {
                 nextProgress++;
-                // this.setState({
-                //     trespassingProgress: nextProgress
-                // });
+                this.setState({
+                    trespassingProgress: nextProgress
+                });
                 if ((nextProgress >= 100) && this.trespassingInterval) {
                     clearInterval(this.trespassingInterval);
-                    this.trespassingInterval = null;
+                    currentEvent.unsubscribe(this.onProgressEventListener);
+                    currentEvent.onAfter();
                     nextProgress = 0;
-                    // this.setState({
-                    //     trespassingProgress: 0
-                    // });
+                    this.setState({
+                        direction: currentEvent.state.to,
+                        routeCurrentEvent: index + 1,
+                        trespassingProgress: 0
+                    });
+                    this.trespassingInterval = null;
+                    this.requestTrespassingCurrentEvent();
+
                 }
             }, trespassingIntervalMilisec);
         }
-
-        this.trespassingTimeout = setTimeout(() => {
-            currentEvent.unsubscribe(this.onProgressEventListener);
-            currentEvent.onAfter();
-            this.setState({
-                direction: currentEvent.state.to,
-                routeCurrentEvent: index + 1,
-            });
-            this.trespassingTimeout = null;
-            this.requestTrespassingCurrentEvent();
-        }, currentEvent.state.durationMiliseconds);
     }
 
     public setJourney(params: {
@@ -135,8 +141,10 @@ class TrainModel extends Service<TrainState> {
         const firstRoute = journeyWithoutFirstRoute.shift();
 
         if (firstRoute && !this.state.events.length) {
+
             const destination = firstRoute[firstRoute.length - 1]?.address;
             if (!destination) return;
+
             const events = firstRoute.map((data, order) => {
                 const event = RouteEventModel.bookEvent({
                     ...data,
@@ -167,6 +175,7 @@ class TrainModel extends Service<TrainState> {
             currentEvent.subscribe(this.onProgressEventListener);
             currentEvent.onBefore();
         } else {
+            this.state.events.forEach(ev => ev.clearSelf())
             this.setState({
                 events: []
             })

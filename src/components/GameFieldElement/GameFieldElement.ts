@@ -17,6 +17,8 @@ import TrainRunElement from "../TrainRun/TrainRun.js";
 import OperationIndicatorElement from "./OperationIndicatorElement.js";
 import ConstructionProgressElement from "./ConstructionProgressElement.js";
 import FloatersService from "#src/service/FloatersService/FloatersService.js";
+import TrainTrespassingLight from "#src/types/TrainTresspasingLight.js";
+import TrafficLight from "#src/atoms/TrafficLight/TrafficLight.js";
 
 class GameFieldElement extends HTMLElement {
 
@@ -62,22 +64,14 @@ class GameFieldElement extends HTMLElement {
         this.renderEdges = this.renderEdges.bind(this);
         this.renderBackground = this.renderBackground.bind(this);
         this.subscribeAdjacnetFields = this.subscribeAdjacnetFields.bind(this);
-        this.appendTrainAnimation = this.appendTrainAnimation.bind(this);
         this.appenTrainElement = this.appenTrainElement.bind(this);
-    }
-
-    public appendTrainAnimation(params: { from: Direction | null, to: Direction | null, trainId: string }) {
-        const prevAnimation = document.querySelector(`[data-train="${params.trainId}"]`);
-        prevAnimation?.remove();
-        const trainAnimation = document.createElement(TrainRunElement.componentName) as TrainRunElement;
-        trainAnimation.setAttribute('data-train', params.trainId)
-        this.layerRouteAnimationElement.appendChild(trainAnimation);
+        this.subscribeTrafficLights = this.subscribeTrafficLights.bind(this);
     }
 
     public appenTrainElement(trainElement: TrainRunElement) {
         const trainId = trainElement.getAttribute('data-train');
-        if (trainId) {
-            TrainRunElement.trainSelector(trainId, this)?.remove();
+        const contains = this.layerRouteAnimationElement.contains(trainElement);
+        if (trainId && !contains) {
             this.layerRouteAnimationElement.appendChild(trainElement);
         }
     }
@@ -299,8 +293,55 @@ class GameFieldElement extends HTMLElement {
             this.renderTrackOrBuilding(field);
             this.renderConstructionSite(field);
             this.renderOperationIndicator(field);
-            // this.subscribeTrafficLights(field)
+            this.subscribeTrafficLights(field)
         }
+    }
+
+    subscribeTrafficLights(field: FieldModel) {
+        const lightsMap = {
+            [Direction.Bottom]: this.bottomLightElement,
+            [Direction.Top]: this.topLightElement,
+            [Direction.Left]: this.leftLightElement,
+            [Direction.Right]: this.rightLightElement
+        }
+
+        const directionsAmount = Object.values(field.state.railwayOrientation).filter((hasRailway) => hasRailway).length;
+
+        if (directionsAmount <= 2) {
+            Object.values(lightsMap).forEach(light => {
+                light.style.display = 'none'
+            });
+            return;
+        }
+
+        Object.entries(field.state.railwayOrientation).forEach((entry, _, self) => {
+            const [key, hasRailway] = entry;
+            const direction = key as Direction;
+            if (!hasRailway) {
+                lightsMap[direction].style.display = 'none';
+                delete lightsMap[direction];
+            } else {
+                lightsMap[direction].style.display = 'none';
+                lightsMap[direction].classList.remove('--go')
+                lightsMap[direction].classList.remove('--stop')
+            }
+        })
+
+        field.state.events.forEach(event => {
+            if (event.state.light === TrainTrespassingLight.Green) {
+                Object.values(lightsMap).forEach((light) => {
+                    light.style.display = 'block';
+                    light.classList.remove('--go')
+                    light.classList.add('--stop')
+                })
+                if (event.state.from) {
+                    const light = lightsMap[event.state.from];
+                    light.style.display = 'block';
+                    light.classList.add('--go')
+                    light.classList.remove('--stop');
+                }
+            }
+        })
     }
 
     subscribeAdjacnetFields() {
@@ -323,10 +364,10 @@ class GameFieldElement extends HTMLElement {
             <div class="GameFieldElement_layer" data-selector="route-animation"></div>
             <div class="GameFieldElement_layer" data-selector="building"></div>
             <div class="GameFieldElement_layer" data-selector="terrain-items">
-                <div class="GameFieldElement_traffic-light" data-direction="top"></div>
-                <div class="GameFieldElement_traffic-light" data-direction="bottom"></div>
-                <div class="GameFieldElement_traffic-light" data-direction="left"></div>
-                <div class="GameFieldElement_traffic-light" data-direction="right"></div>
+                <traffic-light data-direction="top"></traffic-light>
+                <traffic-light data-direction="bottom"></traffic-light>
+                <traffic-light data-direction="left"></traffic-light>
+                <traffic-light data-direction="right"></traffic-light>
             </div>
             <div class="GameFieldElement_layer" data-selector="operation-indicator"></div>
         `
@@ -339,10 +380,10 @@ class GameFieldElement extends HTMLElement {
         this.layerOperationIndicatorElement = this.querySelector('[data-selector="operation-indicator"]') as HTMLDivElement;
         this.layerTerrainItemsElement = this.querySelector('[data-selector="terrain-items"]') as HTMLDivElement;
 
-        this.topLightElement = document.querySelector('.GameFieldElement_traffic-light[data-direction="top"]') as HTMLDivElement;
-        this.bottomLightElement = document.querySelector('.GameFieldElement_traffic-light[data-direction="bottom"]') as HTMLDivElement;
-        this.leftLightElement = document.querySelector('.GameFieldElement_traffic-light[data-direction="left"]') as HTMLDivElement;
-        this.rightLightElement = document.querySelector('.GameFieldElement_traffic-light[data-direction="right"]') as HTMLDivElement;
+        this.topLightElement = this.querySelector('traffic-light[data-direction="top"]') as HTMLDivElement;
+        this.bottomLightElement = this.querySelector('traffic-light[data-direction="bottom"]') as HTMLDivElement;
+        this.leftLightElement = this.querySelector('traffic-light[data-direction="left"]') as HTMLDivElement;
+        this.rightLightElement = this.querySelector('traffic-light[data-direction="right"]') as HTMLDivElement;
 
         const address = this.address;
         const field = address ? GameBoard.getInstance().getField(address) : null;

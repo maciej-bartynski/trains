@@ -1,5 +1,6 @@
 enum TemplateName {
-    TrainAtom = 'TrainAtom'
+    TrainAtom = 'TrainAtom',
+    TrafficLight = 'TrafficLight',
 }
 
 export default TemplateName

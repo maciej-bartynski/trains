@@ -1,16 +1,4 @@
 import GameBoard from './GameBoard.js';
-// import '#src/components/GameBoard.js';
-// import '#src/components/GameFieldElement/GameFieldElement.js';
-// import '#src/components/MenuBottomElement/BuildingButton.js';
-// import '#src/components/MenuBottomElement/MenuBottomElement.js';
-// import '#src/components/TrainRun/TrainRun.js';
-// import '#src/components/ActionsMenuElement/ActionsMenuElement.js';
-// import '#src/components/MenuTrainsElement/MenuTrainsElement.js';
-// import '#src/components/MenuTrainSetRoute/MenuTrainSetRoute.js';
-// import '#src/atoms/TrainAtom/TrainAtom.js';
-// import Direction from '#src/types/Direction.js';
-// import '#src/service/FloatersService/FloatersService.js'
-// import FloatersService from '#src/service/FloatersService/FloatersService.js';
 import GameBoardElement from '#src/components/GameBoard.js';
 import ActionMenuElement from '#src/components/ActionsMenuElement/ActionsMenuElement.js';
 import GameFieldElement from '#src/components/GameFieldElement/GameFieldElement.js';
@@ -23,6 +11,7 @@ import ConstructionProgressElement from './components/GameFieldElement/Construct
 import OperationIndicatorElement from './components/GameFieldElement/OperationIndicatorElement.js';
 import BuildingButtonElement from '#src/components/MenuBottomElement/BuildingButton.js';
 import BaseComponent from './framework/BaseComponent/BaseComponent.js';
+import TrafficLight from './atoms/TrafficLight/TrafficLight.js';
 
 document.addEventListener('DOMContentLoaded', async (): Promise<void> => {
     GameBoard.getInstance();
@@ -37,5 +26,6 @@ document.addEventListener('DOMContentLoaded', async (): Promise<void> => {
     customElements.define(MenuTrainSetRoute.componentName, MenuTrainSetRoute);
     customElements.define(TrainRunElement.componentName, TrainRunElement);
     customElements.define(TrainAtom.elementName, TrainAtom);
+    customElements.define(TrafficLight.elementName, TrafficLight);
     BaseComponent.resolve?.(true)
 });
