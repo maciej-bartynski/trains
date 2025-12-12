@@ -75,10 +75,6 @@ class MenuTrainSetRoute extends StatefullComponent<ElementState, ElementProps> {
                         })
                     })
                 }
-                // this.setProps({
-                //     trainId: actions.action.payload.trainId,
-                //     routes: actions.action.payload.routes
-                // })
             } else {
                 this.setProps(undefined)
             }
@@ -94,8 +90,13 @@ class MenuTrainSetRoute extends StatefullComponent<ElementState, ElementProps> {
             this.style.display = 'block';
             trainAtom?.setAttribute('data-color', train.state.randomColor);
             this.desinationsList.innerHTML = '';
-            // props?.routes?.forEach(route => {
-            train.state.journey.forEach(route => {
+
+            const routesToRender = train.state.events.length
+                ? [[
+                    ...train.state.events.map(e => e.state)
+                ], ...train.state.journey]
+                : train.state.journey;
+            routesToRender.forEach(route => {
                 const destinationAddress = route[route.length - 1]?.address;
                 if (destinationAddress) {
                     const listItem = this.destinationsListItem.cloneNode(true) as HTMLLIElement;
@@ -123,7 +124,6 @@ class MenuTrainSetRoute extends StatefullComponent<ElementState, ElementProps> {
                 }
             });
 
-            // if (props?.routes?.length) {
             if (train.state.journey.length) {
                 this.contentSection.appendChild(this.goCta);
                 this.goCta.onclick = () => {

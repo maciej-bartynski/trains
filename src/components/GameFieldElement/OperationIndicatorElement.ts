@@ -46,7 +46,8 @@ class OperationIndicatorElement extends HTMLElement {
     }
 
     private async onSelectDestination() {
-        const state = actionsMenuService.state
+        const state = actionsMenuService.state;
+
         if (state.action?.type === ActionsMenuOptionName.TrainSetRoute && this.address) {
             const setRouteAction = state.action.payload;
             const currentTrain = GameBoard.getInstance().getTrain(setRouteAction.trainId);
@@ -54,9 +55,7 @@ class OperationIndicatorElement extends HTMLElement {
             if (!currentTrain || !currentField) {
                 return;
             }
-            const lastRoute = (setRouteAction.routes && setRouteAction.routes.length)
-                ? setRouteAction.routes[setRouteAction.routes.length - 1]
-                : null;
+            const lastRoute = currentTrain.state.journey[currentTrain.state.journey.length - 1] ?? null;
             const lastDesination = lastRoute
                 ? lastRoute[lastRoute.length - 1]
                 : null;

@@ -1,6 +1,4 @@
 import Service from "#src/framework/Service/Service.js";
-import Address from "#src/types/Address";
-import Direction from "#src/types/Direction";
 import TrainRouteEvent from "#src/types/TrainTrespassingEvent.js";
 import TrainTrespassingLight from "#src/types/TrainTresspasingLight.js";
 
@@ -18,12 +16,14 @@ class RouteEventModel extends Service<RouteEventState> {
         super();
         this.state = params;
 
-        this.state.state = 'before';
+        this.state.state = params.state ?? 'before';
         this.state.light = TrainTrespassingLight.Red;
 
         this.clearSelf = this.clearSelf.bind(this);
         this.onAfter = this.onAfter.bind(this);
         this.onBefore = this.onBefore.bind(this);
+        this.lightGreen = this.lightGreen.bind(this);
+        this.lightRed = this.lightRed.bind(this);
     }
 
     static bookEvent(params: {
@@ -37,7 +37,6 @@ class RouteEventModel extends Service<RouteEventState> {
                 state: 'before',
                 ...params,
             });
-            // Service.gameBoard.setEvent(event);
             field.registerEvent(event);
             return event;
         }
@@ -49,7 +48,6 @@ class RouteEventModel extends Service<RouteEventState> {
         if (field) {
             field.unregisterEvent(this);
         }
-        // Service.gameBoard.deleteEvent(this.state.trainId);
     }
 
     public lightRed() {

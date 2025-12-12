@@ -1,6 +1,5 @@
+import GameFieldElement from "#src/components/GameFieldElement/GameFieldElement.js";
 import Service from "#src/framework/Service/Service.js";
-import GameBoard from "#src/GameBoard.js";
-import GameBoardEl from "#src/components/GameBoard.js";
 import Address from "#src/types/Address.js";
 import BuildingKind from "#src/types/BuildingKind.js";
 import ConstructionSite from "#src/types/ConstructionSite.js";
@@ -12,7 +11,7 @@ import TerrainKind from "#src/types/TerrainKind.js";
 import TrainTrespassingLight from "#src/types/TrainTresspasingLight.js";
 import AdjacentFields from "#src/utils/AdjacentFields.js";
 import Terrain from "#src/utils/Terrain.js";
-import RouteEventModel from "./RouteEventModel";
+import RouteEventModel from "./RouteEventModel.js";
 
 interface FieldState {
     constructionSite: ConstructionSite | null;
@@ -35,12 +34,21 @@ class FieldModel extends Service<FieldState> {
     private constructor(params: FieldState) {
         super();
         this.state = params;
+        this.state.events = params.events.map(event => {
+            if (event instanceof RouteEventModel) {
+                /** This should never happen */
+                return event
+            } else {
+                /** Events are "booked" by trains */
+                return null;
+            }
+        }).filter(item => !!item);
         this.toJSON = this.toJSON.bind(this);
         this.uncover = this.uncover.bind(this);
         this.buildRailway = this.buildRailway.bind(this);
         this.buildRailwayStation = this.buildRailwayStation.bind(this);
         this.onEventUpdate = this.onEventUpdate.bind(this);
-        this.registerEvent = this.registerEvent.bind(this)
+        this.registerEvent = this.registerEvent.bind(this);
     }
 
     public uncover() {
@@ -394,6 +402,7 @@ class FieldModel extends Service<FieldState> {
                 return event !== routeEvent;
             })
         });
+
         this.onEventUpdate(routeEvent.state)
     }
 
@@ -401,7 +410,7 @@ class FieldModel extends Service<FieldState> {
         this.setState({
             events: [...this.state.events, routeEvent]
         });
-        routeEvent.subscribe(this.onEventUpdate)
+        routeEvent.subscribe(this.onEventUpdate);
     }
 
     static touch(address: Address) {

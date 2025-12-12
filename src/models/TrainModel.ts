@@ -46,16 +46,31 @@ class TrainModel extends Service<TrainState> {
     private constructor(params: TrainState) {
         super();
         this.state = params;
+        this.state.events = params.events.map(event => {
+            if (event instanceof RouteEventModel) {
+                return event;
+            } else {
+                const eventModel = RouteEventModel.fromJSON(event);
+                const field = eventModel ? Service.gameBoard.getField(eventModel.state.address) : null;
+                if (eventModel && field) {
+                    field.registerEvent(eventModel);
+                    return eventModel;
+                }
+                return null;
+            }
+        }).filter(item => !!item);
         this.setJourney = this.setJourney.bind(this);
         this.toJSON = this.toJSON.bind(this);
         this.requestTrespassingCurrentEvent = this.requestTrespassingCurrentEvent.bind(this);
         this.onProgressEventListener = this.onProgressEventListener.bind(this);
         this.addRoute = this.addRoute.bind(this);
+        this.requestTrespassingCurrentEvent()
     }
 
     private trespassingInterval: number | null = null;
 
     private async onProgressEventListener(eventState: RouteEventModel['state']) {
+
         if (this.trespassingInterval) {
             /** 
              * Already in progress.
@@ -101,6 +116,7 @@ class TrainModel extends Service<TrainState> {
         });
 
         if (this.trespassingInterval === null) {
+
             const trespassingIntervalMilisec = currentEvent.state.durationMiliseconds / 100;
             let nextProgress = this.state.trespassingProgress ?? 0;
             this.trespassingInterval = setInterval(() => {

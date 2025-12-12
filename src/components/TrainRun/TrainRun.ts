@@ -56,20 +56,35 @@ class TrainRunElement extends HTMLElement {
     }
 
     render(trainState: TrainModel['state']) {
+
         this.trainEl.setAttribute('data-color', trainState.randomColor);
         const event = trainState.events.find(ev => ev.state.order === trainState.routeCurrentEvent);
-
         const progressPercentage = trainState.trespassingProgress;
-
         this.from = event?.state.from ?? null;
         this.to = event?.state.to ?? null;
 
-        const field = event?.state.address ? GameFieldElement.selectFieldByAddress(event?.state.address) : null;
+        const fieldModel = event
+            ? GameBoard.getInstance().getField(event?.state.address)
+            : GameBoard.getInstance().getField(trainState.location);
+        const field = event
+            ? GameFieldElement.selectFieldByAddress(event?.state.address)
+            : GameFieldElement.selectFieldByAddress(trainState.location);
+
         if (!field) return;
+
+        if (!event && fieldModel) {
+            this.from = null;
+            this.to = Object.entries(fieldModel.state.railwayOrientation)
+                .find(([, hasRailway]) => hasRailway)?.[0] as Direction;
+            // this.appendChild(this.stopEl);
+            // this.stopEl.appendChild(this.trainEl);
+            // this.trainEl.classList.remove('--moving');
+        }
 
         field.appenTrainElement(this)
 
         if (this.from && this.to) {
+
             this.classList.add(`from-${this.from}`);
             this.trainEl.classList.add('--moving');
 
@@ -152,6 +167,10 @@ class TrainRunElement extends HTMLElement {
         if (!this.to && !this.from) {
             this.appendChild(this.stopEl);
             this.stopEl.appendChild(this.trainEl);
+            this.trainEl.classList.remove('--moving');
+        }
+
+        if (!event && this.trainEl.isConnected) {
             this.trainEl.classList.remove('--moving');
         }
     }

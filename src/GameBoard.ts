@@ -15,7 +15,6 @@ import AdjacentFields from "./utils/AdjacentFields.js";
 interface GameBoardState {
     fields: Record<string, FieldModel>;
     trains: Record<string, TrainModel>;
-    events: Record<string, RouteEventModel>;
     furthestRow: number;
     furthestColumn: number;
 }
@@ -39,7 +38,6 @@ class GameBoard extends Service<GameBoardState> {
     state: GameBoardState = {
         fields: {},
         trains: {},
-        events: {},
         furthestRow: 0,
         furthestColumn: 0,
     }
@@ -63,33 +61,9 @@ class GameBoard extends Service<GameBoardState> {
             Object.entries(game.trains).forEach(([key, train]) => {
                 this.state.trains[key] = TrainModel.fromJSON(train);
             });
-            // Object.entries(game.events).forEach(([key, event]) => {
-            //     this.state.events[key] = RouteEventModel.fromJSON(event);
-            // });
             this.state.furthestColumn = game.furthestColumn;
             this.state.furthestRow = game.furthestRow;
         }
-    }
-
-    public setEvent(event: RouteEventModel) {
-        this.setState({
-            events: {
-                ...this.state.events,
-                [event.state.trainId]: event
-            }
-        })
-    }
-
-    public getEvent(trainId: string) {
-        return this.state.events[trainId]
-    }
-
-    public deleteEvent(trainId: string) {
-        const nextEvents = this.state.events;
-        delete nextEvents[trainId];
-        this.setState({
-            events: nextEvents
-        })
     }
 
     public setTrain(train: TrainModel) {

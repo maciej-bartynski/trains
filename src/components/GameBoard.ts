@@ -57,7 +57,6 @@ class GameBoardElement extends StatefullComponent<GameBoardElementState, GameBoa
 
             const trainElement = TrainRunElement.trainSelector(trainId);
             const fieldElement = GameFieldElement.selectFieldByAddress(train.state.location);
-
             if (!trainElement && fieldElement) {
                 const trainAnimation = TrainRunElement.createTrainElement({
                     trainId: trainId,

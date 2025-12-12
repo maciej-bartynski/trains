@@ -1,4 +1,5 @@
 import Service from "#src/framework/Service/Service.js";
+import GameBoard from "#src/GameBoard.js";
 import Address from "#src/types/Address.js";
 import BuildingKind from "#src/types/BuildingKind.js";
 import Orientation, { OrientationSquareVariant } from "#src/types/Orientation.js";
@@ -113,12 +114,16 @@ class ActionsMenuService extends Service<ActionsMenuServiceState> {
             nextRoutes = [...(currentState?.payload?.routes ?? []), params.route];
         }
 
+        const train = GameBoard.getInstance().getTrain(params.trainId);
+        if (train && params.route) {
+            train.addRoute({ route: params.route })
+        }
+
         this.setState({
             action: {
                 type: ActionsMenuOptionName.TrainSetRoute,
                 payload: {
                     trainId: params.trainId,
-                    routes: nextRoutes
                 }
             }
         });
