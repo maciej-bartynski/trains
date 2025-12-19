@@ -1,4 +1,4 @@
-import Direction from "#src/types/Direction";
+import Direction from "#src/types/Direction.js";
 import Orientation, { OrientationSquareVariant } from "#src/types/Orientation.js";
 
 const getNormalizedOrientation = (orientation: Orientation): Orientation => {
@@ -71,6 +71,50 @@ const canUpgradeToIntersection = (params: {
 
 }
 
+const isVerticalOnly = (orientation: Orientation) => {
+    const defaultOrientation: Orientation = getNormalizedOrientation(orientation);
+    let isVerticalOnly = true;
+    Object.entries(defaultOrientation).forEach(entry => {
+        const [dir, hasRoute] = entry as [Direction, boolean];
+        switch (dir) {
+            case Direction.Bottom:
+            case Direction.Top: {
+                isVerticalOnly = isVerticalOnly && hasRoute;
+                break;
+            }
+            case Direction.Left:
+            case Direction.Right: {
+                isVerticalOnly = isVerticalOnly && !hasRoute;
+                break;
+            }
+        }
+    });
+
+    return isVerticalOnly
+}
+
+const isHorizontalOnly = (orientation: Orientation) => {
+    const defaultOrientation: Orientation = getNormalizedOrientation(orientation);
+    let isHorizontalOnly = true;
+    Object.entries(defaultOrientation).forEach(entry => {
+        const [dir, hasRoute] = entry as [Direction, boolean];
+        switch (dir) {
+            case Direction.Bottom:
+            case Direction.Top: {
+                isHorizontalOnly = isHorizontalOnly && !hasRoute;
+                break;
+            }
+            case Direction.Left:
+            case Direction.Right: {
+                isHorizontalOnly = isHorizontalOnly && hasRoute;
+                break;
+            }
+        }
+    });
+
+    return isHorizontalOnly;
+}
+
 const OrientationUtils = {
     canUpgradeToIntersection,
     isSquare,
@@ -79,6 +123,8 @@ const OrientationUtils = {
     getNewDirections,
     mergeOrientations,
     getNormalizedOrientation,
+    isHorizontalOnly,
+    isVerticalOnly,
 }
 
 export default OrientationUtils;

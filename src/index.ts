@@ -12,6 +12,7 @@ import OperationIndicatorElement from './components/GameFieldElement/OperationIn
 import BuildingButtonElement from '#src/components/MenuBottomElement/BuildingButton.js';
 import BaseComponent from './framework/BaseComponent/BaseComponent.js';
 import TrafficLight from './atoms/TrafficLight/TrafficLight.js';
+import FieldMenuElement from './components/FieldMenuElement/FieldMenuElement.js'
 
 document.addEventListener('DOMContentLoaded', async (): Promise<void> => {
     GameBoard.getInstance();
@@ -27,5 +28,6 @@ document.addEventListener('DOMContentLoaded', async (): Promise<void> => {
     customElements.define(TrainRunElement.componentName, TrainRunElement);
     customElements.define(TrainAtom.elementName, TrainAtom);
     customElements.define(TrafficLight.elementName, TrafficLight);
+    customElements.define(FieldMenuElement.componentName, FieldMenuElement);
     BaseComponent.resolve?.(true)
 });

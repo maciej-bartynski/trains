@@ -1,5 +1,6 @@
 import GameBoard from "#src/GameBoard.js";
 import TrainModel from "#src/models/TrainModel.js";
+// import actionsMenuService from "#src/service/ActionsMenuService/index.js";
 import Direction from "#src/types/Direction.js";
 import DirectionUtils from "#src/utils/DirectionUtils.js";
 import GameFieldElement from "../GameFieldElement/GameFieldElement.js";
@@ -58,6 +59,11 @@ class TrainRunElement extends HTMLElement {
     render(trainState: TrainModel['state']) {
 
         this.trainEl.setAttribute('data-color', trainState.randomColor);
+
+        this.trainEl.onclick = () => {
+            GameBoard.ServicesRegistry.actionsMenu.onTrainSetRoute({ trainId: trainState.id })
+        }
+
         const event = trainState.events.find(ev => ev.state.order === trainState.routeCurrentEvent);
         const progressPercentage = trainState.trespassingProgress;
         this.from = event?.state.from ?? null;
@@ -76,12 +82,9 @@ class TrainRunElement extends HTMLElement {
             this.from = null;
             this.to = Object.entries(fieldModel.state.railwayOrientation)
                 .find(([, hasRailway]) => hasRailway)?.[0] as Direction;
-            // this.appendChild(this.stopEl);
-            // this.stopEl.appendChild(this.trainEl);
-            // this.trainEl.classList.remove('--moving');
         }
 
-        field.appenTrainElement(this)
+        field.appenTrainElement(this);
 
         if (this.from && this.to) {
 

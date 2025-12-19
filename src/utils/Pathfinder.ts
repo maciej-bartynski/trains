@@ -46,7 +46,8 @@ const isRouteEnd = (field: FieldModel) => {
     const deadEnd = isDeadEnd(field);
     const isStation = field.state.building === BuildingKind.RailwayStation;
     const isGarage = field.state.building === BuildingKind.RailwayGarage;
-    const isRoutePartEnd = deadEnd || isStation || isGarage;
+    const isProductionStation = field.state.building === BuildingKind.Timber;
+    const isRoutePartEnd = deadEnd || isStation || isGarage || isProductionStation;
     return isRoutePartEnd;
 }
 
@@ -226,7 +227,6 @@ const getShortestRoute = (allRoutes: NonEmptyArray<NonEmptyArray<TrainRouteEvent
     return allRoutes[0]
 }
 
-// const performAStarRouteSearching = (train: TrainModel) => {
 const performAStarRouteSearching = (train: {
     location: Address,
     destination: Address,

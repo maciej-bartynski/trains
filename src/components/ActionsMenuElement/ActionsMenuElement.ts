@@ -1,4 +1,4 @@
-import actionsMenuService from "#src/service/ActionsMenuService/index.js";
+
 import ActionsMenuService from "#src/service/ActionsMenuService/ActionsMenuService.js";
 import ActionsMenuOptionName from "#src/service/ActionsMenuService/types.js";
 import GameBoard from "#src/GameBoard.js";
@@ -77,7 +77,7 @@ class ActionMenuElement extends HTMLElement {
         this.onTrainsList = this.onTrainsList.bind(this);
         this.onDestroy = this.onDestroy.bind(this);
 
-        actionsMenuService.subscribe(this.onActionsMenuServiceState)
+        GameBoard.ServicesRegistry.actionsMenu.subscribe(this.onActionsMenuServiceState)
 
     }
 
@@ -101,42 +101,42 @@ class ActionMenuElement extends HTMLElement {
     }
 
     onBuildRailway() {
-        if (actionsMenuService.state.action?.type === ActionsMenuOptionName.BuildRailway) {
-            actionsMenuService.onClear();
+        if (GameBoard.ServicesRegistry.actionsMenu.state.action?.type === ActionsMenuOptionName.BuildRailway) {
+            GameBoard.ServicesRegistry.actionsMenu.onClear();
         } else {
-            actionsMenuService.onBuildRailwayOption();
+            GameBoard.ServicesRegistry.actionsMenu.onBuildRailwayOption();
         }
     }
 
     onBuildBuilding() {
-        if (actionsMenuService.state.action?.type === ActionsMenuOptionName.BuildBuilding) {
-            actionsMenuService.onClear();
+        if (GameBoard.ServicesRegistry.actionsMenu.state.action?.type === ActionsMenuOptionName.BuildBuilding) {
+            GameBoard.ServicesRegistry.actionsMenu.onClear();
         } else {
-            actionsMenuService.onBuildBuildingOption();
+            GameBoard.ServicesRegistry.actionsMenu.onBuildTrackBuildingOption();
         }
     }
 
     onBuildTrain() {
-        if (actionsMenuService.state.action?.type === ActionsMenuOptionName.BuildTrain) {
-            actionsMenuService.onClear();
+        if (GameBoard.ServicesRegistry.actionsMenu.state.action?.type === ActionsMenuOptionName.BuildTrain) {
+            GameBoard.ServicesRegistry.actionsMenu.onClear();
         } else {
-            actionsMenuService.onBuildTrainOption();
+            GameBoard.ServicesRegistry.actionsMenu.onBuildTrainOption();
         }
     }
 
     onTrainsList() {
-        if (actionsMenuService.state.action?.type === ActionsMenuOptionName.TrainsList) {
-            actionsMenuService.onClear();
+        if (GameBoard.ServicesRegistry.actionsMenu.state.action?.type === ActionsMenuOptionName.TrainsList) {
+            GameBoard.ServicesRegistry.actionsMenu.onClear();
         } else {
-            actionsMenuService.onTrainsListOption();
+            GameBoard.ServicesRegistry.actionsMenu.onTrainsListOption();
         }
     }
 
     onDestroy() {
-        if (actionsMenuService.state.action?.type === ActionsMenuOptionName.Destroy) {
-            actionsMenuService.onClear();
+        if (GameBoard.ServicesRegistry.actionsMenu.state.action?.type === ActionsMenuOptionName.Destroy) {
+            GameBoard.ServicesRegistry.actionsMenu.onClear();
         } else {
-            actionsMenuService.onDestroyOption();
+            GameBoard.ServicesRegistry.actionsMenu.onDestroyOption();
         }
     }
 

@@ -1,7 +1,6 @@
 import Config from "#src/config.js";
 import GameBoard from "#src/GameBoard.js";
 import FieldModel from "#src/models/FieldModel.js";
-import actionsMenuService from "#src/service/ActionsMenuService/index.js";
 import ActionsMenuOptionName, { BuildBuildingOption, BuildRailwayOption } from "#src/service/ActionsMenuService/types.js";
 import Address from "#src/types/Address.js";
 import BuildingKind from "#src/types/BuildingKind.js";
@@ -18,7 +17,7 @@ import OperationIndicatorElement from "./OperationIndicatorElement.js";
 import ConstructionProgressElement from "./ConstructionProgressElement.js";
 import FloatersService from "#src/service/FloatersService/FloatersService.js";
 import TrainTrespassingLight from "#src/types/TrainTresspasingLight.js";
-import TrafficLight from "#src/atoms/TrafficLight/TrafficLight.js";
+import FieldMenuElement from "../FieldMenuElement/FieldMenuElement.js";
 
 class GameFieldElement extends HTMLElement {
 
@@ -50,6 +49,12 @@ class GameFieldElement extends HTMLElement {
     private buildingElement: HTMLImageElement = (() => {
         const element = document.createElement('img') as HTMLImageElement;
         element.classList.add('building-image');
+        return element;
+    })()
+
+    private trackElement: HTMLImageElement = (() => {
+        const element = document.createElement('img') as HTMLImageElement;
+        element.classList.add('track-image');
         return element;
     })()
 
@@ -91,7 +96,7 @@ class GameFieldElement extends HTMLElement {
         const field = address ? GameBoard.getInstance().getField(address) : null;
 
         const skippedActions = [ActionsMenuOptionName.BuildTrain, ActionsMenuOptionName.TrainSetRoute, ActionsMenuOptionName.TrainsList]
-        if (skippedActions.includes(actionsMenuService.state.action?.type as any)) {
+        if (skippedActions.includes(GameBoard.ServicesRegistry.actionsMenu.state.action?.type as any)) {
             return;
         }
 
@@ -105,17 +110,17 @@ class GameFieldElement extends HTMLElement {
                 ActionsMenuOptionName.BuildRailway
             ]
 
-            if (buildOperations.includes(actionsMenuService.state.action?.type)) {
+            if (buildOperations.includes(GameBoard.ServicesRegistry.actionsMenu.state.action?.type)) {
 
-                let { kind } = (actionsMenuService.state.action as any)?.payload ?? { kind: null };
+                let { kind } = (GameBoard.ServicesRegistry.actionsMenu.state.action as any)?.payload ?? { kind: null };
 
-                if (actionsMenuService.state.action?.type === ActionsMenuOptionName.BuildRailway) {
+                if (GameBoard.ServicesRegistry.actionsMenu.state.action?.type === ActionsMenuOptionName.BuildRailway) {
                     kind = BuildingKind.RailwayTrack
                 }
 
                 switch (kind) {
                     case BuildingKind.RailwayTrack: {
-                        const action = actionsMenuService.state.action as BuildRailwayOption;
+                        const action = GameBoard.ServicesRegistry.actionsMenu.state.action as BuildRailwayOption;
                         if (!action.payload) {
                             return;
                         }
@@ -126,7 +131,7 @@ class GameFieldElement extends HTMLElement {
                         break;
                     }
                     case BuildingKind.RailwayStation: {
-                        const action = actionsMenuService.state.action as BuildBuildingOption;
+                        const action = GameBoard.ServicesRegistry.actionsMenu.state.action as BuildBuildingOption;
                         if (!action.payload) {
                             return;
                         }
@@ -136,7 +141,7 @@ class GameFieldElement extends HTMLElement {
                         break;
                     }
                     case BuildingKind.RailwayGarage: {
-                        const action = actionsMenuService.state.action as BuildBuildingOption;
+                        const action = GameBoard.ServicesRegistry.actionsMenu.state.action as BuildBuildingOption;
                         const payload = action?.payload;
                         if (!payload) {
                             return;
@@ -147,9 +152,21 @@ class GameFieldElement extends HTMLElement {
                         });
                         break;
                     }
+                    case BuildingKind.Timber: {
+                        const action = GameBoard.ServicesRegistry.actionsMenu.state.action as BuildBuildingOption;
+                        const payload = action?.payload;
+                        if (!payload) {
+                            return;
+                        }
+                        field.buildProductionBuilding();
+                        break;
+                    }
                 }
             } else if (field.state.building === BuildingKind.RailwayGarage) {
-                actionsMenuService.onTrainGarageOption({ address: field.state.address });
+                GameBoard.ServicesRegistry.actionsMenu.onTrainGarageOption({ address: field.state.address });
+            } else {
+                const fieldMenu = FieldMenuElement.selectFieldMenu();
+                fieldMenu.onOpenMenu({ fieldAddress: address })
             }
         }
     }
@@ -190,7 +207,7 @@ class GameFieldElement extends HTMLElement {
 
     private renderTrackOrBuilding(field: FieldModel) {
         if (field.state.constructionSite?.state === ConstructionState.Completed && field.state.building) {
-            const isTrackConstructed = field.state.building === BuildingKind.RailwayTrack;
+            const isTrackConstructed = field.state.building;
             const isBuildingConstructed = field.state.building && field.state.building !== BuildingKind.RailwayTrack;
 
             const nextBuildingImageSrc = BuildingOrientationUtils.orientationToImage({
@@ -199,22 +216,28 @@ class GameFieldElement extends HTMLElement {
                 orientationSquareVariant: field.state.railwayOrientationSquareVariant
             }) ?? "";
 
+            const nextTrackImageSrc = BuildingOrientationUtils.orientationToImage({
+                kind: BuildingKind.RailwayTrack,
+                orientation: field.state.railwayOrientation,
+                orientationSquareVariant: field.state.railwayOrientationSquareVariant
+            }) ?? "";
+
             const buildingAlreadyRendered = this.buildingElement.src.includes(nextBuildingImageSrc) && (
                 this.buildingElement.isConnected
             )
 
-            if (buildingAlreadyRendered) {
-                return;
-            }
+            const trackAlreadyRendered = this.trackElement.src.includes(nextTrackImageSrc) && (
+                this.trackElement.isConnected
+            )
 
-            if (isTrackConstructed) {
+            if (isTrackConstructed && !trackAlreadyRendered) {
                 this.constructionProgressElement.remove();
-                this.buildingElement.src = nextBuildingImageSrc;
-                this.layerTrackElement.appendChild(this.buildingElement);
+                this.trackElement.src = nextTrackImageSrc;
+                this.layerTrackElement.appendChild(this.trackElement);
 
             }
 
-            if (isBuildingConstructed) {
+            if (isBuildingConstructed && !buildingAlreadyRendered) {
                 this.constructionProgressElement.remove();
                 this.buildingElement.src = nextBuildingImageSrc;
                 this.layerBuildingElement.appendChild(this.buildingElement);
@@ -399,6 +422,13 @@ class GameFieldElement extends HTMLElement {
         const field = address ? GameBoard.getInstance().getField(address) : null;
         if (field) {
             field.unsubscribe(this.render);
+            GameBoard.getInstance().unsubscribe(this.subscribeAdjacnetFields);
+            FloatersService.getInstance().unsubscribe(this.render);
+            const adjacentFields = AdjacentFields.getAdjacentFields({ address: field.state.address });
+            adjacentFields.top?.unsubscribe(this.render);
+            adjacentFields.bottom?.unsubscribe(this.render);
+            adjacentFields.left?.unsubscribe(this.render);
+            adjacentFields.right?.unsubscribe(this.render);
         }
     }
 

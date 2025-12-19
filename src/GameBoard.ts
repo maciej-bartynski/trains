@@ -15,6 +15,13 @@ import AdjacentFields from "./utils/AdjacentFields.js";
 interface GameBoardState {
     fields: Record<string, FieldModel>;
     trains: Record<string, TrainModel>;
+    resources: {
+        wood: number,
+        stone: number,
+        iron: number,
+        coal: number,
+        gold: number,
+    },
     furthestRow: number;
     furthestColumn: number;
 }
@@ -38,6 +45,13 @@ class GameBoard extends Service<GameBoardState> {
     state: GameBoardState = {
         fields: {},
         trains: {},
+        resources: {
+            wood: 10,
+            stone: 10,
+            iron: 10,
+            coal: 10,
+            gold: 10,
+        },
         furthestRow: 0,
         furthestColumn: 0,
     }

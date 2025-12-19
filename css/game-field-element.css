@@ -37,6 +37,11 @@ game-field-element {
     z-index: 3;
 }
 
+/* .GameFieldElement_layer:not([data-selector="route-animation"]),
+.GameFieldElement_layer:not([data-selector="building"]) {
+    pointer-events: none;
+} */
+
 .edge-top,
 .edge-bottom,
 .edge-left,
@@ -153,7 +158,8 @@ construction-progress-element .progress-circle {
     }
 }
 
-game-field-element img.building-image {
+game-field-element img.building-image,
+game-field-element img.track-image {
     display: block;
     width: 100%;
     height: 100%;

@@ -1,0 +1,132 @@
+field-menu {
+    position: fixed;
+    left: 25px;
+    top: 25px;
+}
+
+.field-menu_loader {
+    width: 300px;
+    height: 200px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.field-menu_loader>div {
+    width: 60px;
+    height: 60px;
+    border: solid 3px var(--indicator-blue);
+    border-top: solid 3px transparent;
+    border-radius: 50%;
+    animation: rotation 250ms ease-in-out 0 infinite forwards;
+}
+
+@keyframes rotation {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.field-menu_dialog {
+    width: 350px;
+    max-height: calc(100vh - 50px);
+    padding: 10px;
+    border-radius: 10px;
+    max-width: calc(100vw - 50px);
+}
+
+.field-menu_dialog .close-button {
+    margin-left: auto;
+}
+
+.field-menu_fieldPreview {
+    display: flex;
+    flex-direction: column;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: flex-start;
+    height: 60px;
+    width: 100px;
+}
+
+.field-menu_fieldPreview_field {
+    width: 50px;
+    height: 50px;
+    margin-right: 16px;
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.field-menu_fieldPreview_kind {
+    font-size: 12px;
+    font-weight: bolder;
+    margin-bottom: 6px;
+    text-transform: capitalize;
+}
+
+.field-menu_fieldPreview_address {
+    text-transform: capitalize;
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+
+.field-menu_fieldPreview_orientation {
+    text-transform: capitalize;
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+
+.field-menu_fieldPreview_orientation,
+.field-menu_fieldPreview_address,
+.field-menu_fieldPreview_kind,
+.field-menu_fieldPreview_field {
+    font-size: 10px;
+    color: white;
+    line-height: 16px;
+    white-space: nowrap;
+}
+
+.field-menu_fieldPreview_address_indicator-address {
+    width: 10px;
+    height: 10px;
+    background-color: var(--tertiary);
+    border-radius: 2px;
+    border: solid 1px black;
+    position: relative;
+}
+
+.field-menu_fieldPreview_address_indicator-address::after,
+.field-menu_fieldPreview_address_indicator-address::before {
+    content: "";
+    width: 1px;
+    height: 18px;
+    background-color: black;
+    position: absolute;
+    left: -1px;
+    top: -6px;
+}
+
+.field-menu_fieldPreview_address_indicator-address::before {
+    left: -6px;
+    top: -1px;
+    width: 18px;
+    height: 1px;
+}
+
+.field-menu_fieldPreview_action-button {
+    height: 100px;
+    padding-left: 20px;
+}
+
+/* .field-menu_trainsSection {}
+
+.field-menu_trainsSection_header {}
+
+.field-menu_trainsSection_list {} */

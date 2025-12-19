@@ -170,6 +170,11 @@ menu-bottom-element .menu-buildings_all-buildings {
     gap: 4px;
 }
 
+menu-bottom-element .menu-buildings_categories {
+    display: flex;
+    gap: 4px
+}
+
 menu-bottom-element .menu-buildings_all-buildings h2 {
     margin: 0;
     padding: 0;

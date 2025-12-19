@@ -34,7 +34,8 @@ class ActionsMenuService extends Service<ActionsMenuServiceState> {
     constructor() {
         super();
         this.onBuildRailwayOption = this.onBuildRailwayOption.bind(this);
-        this.onBuildBuildingOption = this.onBuildBuildingOption.bind(this);
+        this.onBuildTrackBuildingOption = this.onBuildTrackBuildingOption.bind(this);
+        this.onBuildProductionBuildingOption = this.onBuildProductionBuildingOption.bind(this);
         this.onTrainsListOption = this.onTrainsListOption.bind(this);
         this.onDestroyOption = this.onDestroyOption.bind(this);
         this.onTrainSetRoute = this.onTrainSetRoute.bind(this);
@@ -62,7 +63,22 @@ class ActionsMenuService extends Service<ActionsMenuServiceState> {
         })
     }
 
-    onBuildBuildingOption(params?: {
+    onBuildProductionBuildingOption(params?: {
+        kind: BuildingKind,
+        orientation: Orientation
+    }) {
+
+        const buildBuildingAction: BuildBuildingOption = {
+            type: ActionsMenuOptionName.BuildBuilding,
+            payload: params
+        }
+
+        this.setState({
+            action: buildBuildingAction
+        })
+    }
+
+    onBuildTrackBuildingOption(params?: {
         kind: BuildingKind,
         orientation: Orientation
     }) {

@@ -1,5 +1,5 @@
 import GameBoard from "#src/GameBoard.js";
-import actionsMenuService from "#src/service/ActionsMenuService/index.js";
+// import actionsMenuService from "#src/service/ActionsMenuService/index.js";
 import Address from "#src/types/Address.js";
 import BuildingKind from "#src/types/BuildingKind.js";
 import BuildingOrientationUtils from "#src/utils/BuildingOrientationUtils.js";
@@ -46,7 +46,7 @@ class OperationIndicatorElement extends HTMLElement {
     }
 
     private async onSelectDestination() {
-        const state = actionsMenuService.state;
+        const state = GameBoard.ServicesRegistry.actionsMenu.state;
 
         if (state.action?.type === ActionsMenuOptionName.TrainSetRoute && this.address) {
             const setRouteAction = state.action.payload;
@@ -68,7 +68,7 @@ class OperationIndicatorElement extends HTMLElement {
             }
             const route = Pathfinder.performAStarRouteSearching(routeParams);
             if (!route) return;
-            actionsMenuService.onTrainSetRoute({
+            GameBoard.ServicesRegistry.actionsMenu.onTrainSetRoute({
                 trainId: currentTrain.state.id,
                 route
             })
@@ -76,7 +76,7 @@ class OperationIndicatorElement extends HTMLElement {
     }
 
     private onActionMenu() {
-        const state = actionsMenuService.state
+        const state = GameBoard.ServicesRegistry.actionsMenu.state
 
         const currentActionType = state?.action?.type;
         const buildActions = [ActionsMenuOptionName.BuildBuilding, ActionsMenuOptionName.BuildRailway];
@@ -96,7 +96,7 @@ class OperationIndicatorElement extends HTMLElement {
                 return;
             }
             const isRouteEnd = currentField.state.building && currentField.state.building === BuildingKind.RailwayTrack && Object.values(currentField.state.railwayOrientation).filter(item => !!item).length === 1;
-            if (currentField.state.building && [BuildingKind.RailwayGarage, BuildingKind.RailwayStation].includes(currentField.state.building)) {
+            if (currentField.state.building && [BuildingKind.RailwayGarage, BuildingKind.RailwayStation, BuildingKind.Timber].includes(currentField.state.building)) {
                 this.classList.add('--can-go');
                 this.addEventListener('click', this.onSelectDestination)
 
@@ -133,6 +133,10 @@ class OperationIndicatorElement extends HTMLElement {
         if (actionData?.type === ActionsMenuOptionName.BuildBuilding) {
             kind = actionData.payload?.kind;
             orientation = actionData.payload?.orientation;
+            if ([BuildingKind.Timber].includes(kind as BuildingKind)) {
+                const _field = this.address ? GameBoard.getInstance().getField(this.address) : null;
+                orientation = _field?.state.railwayOrientation;
+            }
         }
 
         if (actionData?.type === ActionsMenuOptionName.BuildRailway) {
@@ -150,7 +154,11 @@ class OperationIndicatorElement extends HTMLElement {
         const src = BuildingOrientationUtils.orientationToImage({ kind, orientation, orientationSquareVariant });
         const field = this.address ? GameBoard.getInstance().getField(this.address) : null;
 
-        if (!src || !field) {
+        if (!field) {
+            return;
+        }
+
+        if (!src && ![BuildingKind.Timber].includes(kind)) {
             return;
         }
 
@@ -165,9 +173,17 @@ class OperationIndicatorElement extends HTMLElement {
             case BuildingKind.RailwayGarage:
                 canBuild = field.canBuildRailwayGarage(orientation);
                 break;
+            case BuildingKind.Timber:
+                canBuild = field.canBuildProductionBuilding(BuildingKind.Timber);
+                break;
         }
 
-        this.operationImgElement.src = src;
+        if (src && canBuild) {
+            this.operationImgElement.style.visibility = 'visible'
+            this.operationImgElement.src = src;
+        } else {
+            this.operationImgElement.style.visibility = 'hidden'
+        }
         this.classList.remove('--can-build', '--cannot-build');
         this.classList.add(canBuild ? '--can-build' : '--cannot-build');
     }
@@ -178,7 +194,7 @@ class OperationIndicatorElement extends HTMLElement {
         if (field) {
             field.subscribe(this.onActionMenu);
         }
-        actionsMenuService.subscribe(this.onActionMenu);
+        GameBoard.ServicesRegistry.actionsMenu.subscribe(this.onActionMenu);
 
         this.addEventListener('mouseenter', this.onHover);
         this.addEventListener('mouseleave', this.onLeave);

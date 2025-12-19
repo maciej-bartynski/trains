@@ -4,7 +4,7 @@ import GameBoard from "#src/GameBoard.js";
 import FieldModel from "#src/models/FieldModel.js";
 import TrainModel from "#src/models/TrainModel.js";
 import ActionsMenuService from "#src/service/ActionsMenuService/ActionsMenuService.js";
-import actionsMenuService from "#src/service/ActionsMenuService/index.js";
+// import actionsMenuService from "#src/service/ActionsMenuService/index.js";
 import ActionsMenuOptionName from "#src/service/ActionsMenuService/types.js";
 import BuildingKind from "#src/types/BuildingKind.js";
 import AddressUtils from "#src/utils/AddressUtils.js";
@@ -38,6 +38,7 @@ class MenuTrainsElement extends StatefullComponent<ElementState, ElementProps> {
 
     constructor() {
         super();
+        this.render = this.render.bind(this)
 
         let currentProps: ElementProps = {
             fields: {},
@@ -54,7 +55,8 @@ class MenuTrainsElement extends StatefullComponent<ElementState, ElementProps> {
             this.setProps(nextProps)
         });
 
-        actionsMenuService.subscribe((actionsMenu) => {
+        // actionsMenuService
+        GameBoard.ServicesRegistry.actionsMenu.subscribe((actionsMenu) => {
             const nextProps = { ...currentProps, ...actionsMenu }
             currentProps = nextProps;
             this.setProps(nextProps)
@@ -112,7 +114,7 @@ class MenuTrainsElement extends StatefullComponent<ElementState, ElementProps> {
         this.dialogTitle = this.querySelector('[data-dialog-title]') as HTMLSpanElement;
 
         this.closeButton.onclick = () => {
-            actionsMenuService.onClear();
+            GameBoard.ServicesRegistry.actionsMenu.onClear();
             this.wrapper.close();
         }
 
@@ -144,7 +146,7 @@ class MenuTrainsElement extends StatefullComponent<ElementState, ElementProps> {
         listItemContent.onmouseleave = () => trainEl?.classList.remove('--moving');
         const btn = listItemContent.querySelector('button') as HTMLButtonElement;
         btn.onclick = () => {
-            actionsMenuService.onTrainSetRoute({ trainId: train.state.id });
+            GameBoard.ServicesRegistry.actionsMenu.onTrainSetRoute({ trainId: train.state.id });
         }
         return listItemContent;
     }

@@ -24,7 +24,7 @@ class StatefullComponent<
         return this._props;
     }
 
-    protected setState(update: TState) {
+    protected setState(update: TState | Partial<TState>) {
 
         let isOrWillBePrimitive = update === null || this._state === null;
 
@@ -47,14 +47,14 @@ class StatefullComponent<
         }
 
         if (isOrWillBePrimitive) {
-            this._state = update;
+            this._state = update as TState;
             this.renderWrapper();
         }
 
         const isOrWillBeArray = this._state instanceof Array || update instanceof Array;
 
         if (isOrWillBeArray) {
-            this._state = update;
+            this._state = update as TState;
             this.renderWrapper();
         }
 
@@ -65,7 +65,7 @@ class StatefullComponent<
             this._state = {
                 ...oldState,
                 ...update
-            }
+            } as TState;
             this.renderWrapper();
         }
     }
@@ -83,6 +83,14 @@ class StatefullComponent<
     public setProps(props: TProps) {
         this._props = props;
         this.renderWrapper()
+    }
+
+    set state(initialState: TState) {
+        this._state = initialState;
+    }
+
+    get state() {
+        return this._state;
     }
 
     private async renderWrapper() {

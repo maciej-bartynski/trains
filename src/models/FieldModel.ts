@@ -1,4 +1,3 @@
-import GameFieldElement from "#src/components/GameFieldElement/GameFieldElement.js";
 import Service from "#src/framework/Service/Service.js";
 import Address from "#src/types/Address.js";
 import BuildingKind from "#src/types/BuildingKind.js";
@@ -6,10 +5,13 @@ import ConstructionSite from "#src/types/ConstructionSite.js";
 import ConstructionState from "#src/types/ConstructionState.js";
 import Direction from "#src/types/Direction.js";
 import FieldVisibility from "#src/types/FieldVisibility.js";
+import MaterialKind from "#src/types/MaterialKind.js";
 import Orientation, { OrientationHorizontal, OrientationSquare, OrientationSquareVariant, OrientationVertical } from "#src/types/Orientation.js";
 import TerrainKind from "#src/types/TerrainKind.js";
 import TrainTrespassingLight from "#src/types/TrainTresspasingLight.js";
+import AddressUtils from "#src/utils/AddressUtils.js";
 import AdjacentFields from "#src/utils/AdjacentFields.js";
+import OrientationUtils from "#src/utils/OrientationUtils.js";
 import Terrain from "#src/utils/Terrain.js";
 import RouteEventModel from "./RouteEventModel.js";
 
@@ -23,11 +25,17 @@ interface FieldState {
     railwayOrientation: Orientation,
     railwayOrientationSquareVariant: OrientationSquareVariant | null,
     building: BuildingKind | null,
-    events: RouteEventModel[]
+    events: RouteEventModel[],
+    production: {
+        material: MaterialKind,
+        progress: number,
+        qty: number,
+    } | null;
 }
 
 class FieldModel extends Service<FieldState> {
     private _constructionInterval: number | null = null;
+    private _productionInterval: number | null = null;
 
     state: FieldState;
 
@@ -49,6 +57,15 @@ class FieldModel extends Service<FieldState> {
         this.buildRailwayStation = this.buildRailwayStation.bind(this);
         this.onEventUpdate = this.onEventUpdate.bind(this);
         this.registerEvent = this.registerEvent.bind(this);
+        this.unregisterEvent = this.unregisterEvent.bind(this);
+
+        this.canBuildProductionBuilding = this.canBuildProductionBuilding.bind(this);
+        this.buildProductionBuilding = this.buildProductionBuilding.bind(this);
+        this._startProduction = this._startProduction.bind(this);
+
+        setTimeout(() => {
+            this._startProduction();
+        }, 1000)
     }
 
     public uncover() {
@@ -111,6 +128,53 @@ class FieldModel extends Service<FieldState> {
                 }
             }, 1000);
         });
+    }
+
+    private async _startProduction() {
+        if (this._productionInterval) {
+            return;
+        }
+
+        if (!this.state.production) {
+            return;
+        }
+
+        const maxLoad = 10;
+        const onePercentDurationMilisec = 10;
+
+        this._productionInterval = setInterval(() => {
+            const production = this.state.production;
+            if (!production && this._productionInterval) {
+                clearInterval(this._productionInterval);
+                return;
+            } else if (!production) {
+                return;
+            }
+
+            const currentQty = production.qty ?? 0;
+            const currentProgress = production.progress ?? 0;
+            let nextQty = 0;
+            let nextProgress = 0;
+
+            if (currentProgress >= 100) {
+                nextQty = currentQty + 1;
+                nextQty = nextQty > maxLoad ? maxLoad : nextQty;
+                nextProgress = 0;
+            } else {
+                nextQty = currentQty;
+                nextProgress = currentProgress + 1;
+            }
+
+            this.setState({
+                production: {
+                    ...production,
+                    qty: nextQty,
+                    progress: nextProgress,
+                }
+            })
+
+            console.log('prod', production)
+        }, onePercentDurationMilisec);
     }
 
     public canBuildRailway(orientation: Orientation, orientationSquareVariant?: OrientationSquareVariant | null) {
@@ -269,6 +333,49 @@ class FieldModel extends Service<FieldState> {
         return canBuildRailwayGarage;
     }
 
+    public canBuildProductionBuilding(kind: BuildingKind) {
+        const currentBuilding = this.state.building;
+        const currentOrientation = this.state.railwayOrientation;
+
+        let buildingSpecificRequirementsMet = false;
+
+        switch (kind) {
+            case BuildingKind.Timber: {
+                buildingSpecificRequirementsMet = this.state.terrain === TerrainKind.Forest
+            }
+        }
+
+        if (this.state.constructionSite === null || this.state.constructionSite.state === 'completed') {
+            if (currentBuilding !== BuildingKind.RailwayTrack) {
+                return false;
+            }
+            if (OrientationUtils.isVerticalOnly(currentOrientation)) {
+                return buildingSpecificRequirementsMet;
+            } else if (OrientationUtils.isHorizontalOnly(currentOrientation)) {
+                return buildingSpecificRequirementsMet;
+            } else {
+                return false;
+            }
+        }
+        return false;
+    }
+
+    public async buildProductionBuilding() {
+        if (this.canBuildProductionBuilding(BuildingKind.Timber)) {
+            const durationSeconds = 0.5 //1 * Object.entries(orientation).filter(([_, value]) => value).length;
+            await this._startConstruction({ durationSeconds, kind: BuildingKind.Timber });
+            this.setState({
+                building: BuildingKind.Timber,
+                production: {
+                    material: MaterialKind.Wood,
+                    progress: 0,
+                    qty: 0,
+                }
+            });
+            this._startProduction();
+        }
+    }
+
     public async buildRailway(params: {
         orientation: Orientation,
         orientationSquareVariant?: OrientationSquareVariant | null
@@ -397,6 +504,10 @@ class FieldModel extends Service<FieldState> {
 
     public unregisterEvent(routeEvent: RouteEventModel) {
         routeEvent.unsubscribe(this.onEventUpdate)
+
+        if (AddressUtils.isAddressEqual(routeEvent.state.address, { column: 13, row: 10 })) {
+            console.log("unregister!", this)
+        }
         this.setState({
             events: this.state.events.filter(event => {
                 return event !== routeEvent;
@@ -430,6 +541,7 @@ class FieldModel extends Service<FieldState> {
             building: null,
             constructionSite: null,
             events: [],
+            production: null,
         });
     }
 

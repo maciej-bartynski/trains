@@ -231,6 +231,20 @@ const BuildingKindToOrientationImage: Record<BuildingKind, Record<string, string
             [Direction.Left]: true,
             [Direction.Right]: false,
         })]: 'images/buildings/railway/garage_l.svg',
+    },
+    [BuildingKind.Timber]: {
+        [orientationToTRBLString({
+            [Direction.Top]: true,
+            [Direction.Bottom]: true,
+            [Direction.Left]: false,
+            [Direction.Right]: false,
+        })]: 'images/buildings/production/timber_t-b.svg',
+        [orientationToTRBLString({
+            [Direction.Top]: false,
+            [Direction.Bottom]: false,
+            [Direction.Left]: true,
+            [Direction.Right]: true,
+        })]: 'images/buildings/production/timber_l-r.svg',
     }
 }
 

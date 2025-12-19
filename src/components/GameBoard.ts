@@ -29,6 +29,7 @@ class GameBoardElement extends StatefullComponent<GameBoardElementState, GameBoa
     constructor() {
         super();
         this.manageWorldBgElement = this.manageWorldBgElement.bind(this);
+        this.render = this.render.bind(this)
     }
 
     override render() {

@@ -2,7 +2,7 @@ import TrainAtom from "#src/atoms/TrainAtom/TrainAtom.js";
 import StatefullComponent from "#src/framework/StatefullComponent/StatefullComponent.js";
 import GameBoard from "#src/GameBoard.js";
 import TrainModel from "#src/models/TrainModel.js";
-import actionsMenuService from "#src/service/ActionsMenuService/index.js";
+// import actionsMenuService from "#src/service/ActionsMenuService/index.js";
 import ActionsMenuOptionName from "#src/service/ActionsMenuService/types.js";
 import Address from "#src/types/Address.js";
 import TrainRouteEvent from "#src/types/TrainTrespassingEvent.js";
@@ -31,7 +31,7 @@ class MenuTrainSetRoute extends StatefullComponent<ElementState, ElementProps> {
         this.innerHTML = innerHtmlText;
         const button = this.querySelector('button.close-button') as HTMLButtonElement;
         if (button) {
-            button.onclick = actionsMenuService.onClear;
+            button.onclick = GameBoard.ServicesRegistry.actionsMenu.onClear;
         }
 
         this.desinationsList = this.querySelector(`.${classNames.destinations.root}`) as HTMLUListElement;
@@ -49,8 +49,9 @@ class MenuTrainSetRoute extends StatefullComponent<ElementState, ElementProps> {
     constructor() {
         super();
         this.trainListener = this.trainListener.bind(this);
+        this.render = this.render.bind(this)
 
-        actionsMenuService.subscribe((actions) => {
+        GameBoard.ServicesRegistry.actionsMenu.subscribe((actions) => {
             if (actions.action?.type === ActionsMenuOptionName.TrainSetRoute) {
                 const currentTrain = GameBoard.getInstance().getTrain(actions.action.payload.trainId);
                 let previousTrain: TrainModel | undefined;

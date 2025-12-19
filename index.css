@@ -85,3 +85,11 @@ button.close-button::before {
     padding: 10px;
     border-radius: 10px;
 }
+
+.navigation-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    overflow: visible;
+    z-index: 1000;
+}
