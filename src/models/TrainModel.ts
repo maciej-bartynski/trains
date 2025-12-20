@@ -5,6 +5,7 @@ import TrainRouteEvent from "#src/types/TrainTrespassingEvent.js";
 import Service from "#src/framework/Service/Service.js";
 import RouteEventModel from "./RouteEventModel.js";
 import TrainTrespassingLight from "#src/types/TrainTresspasingLight.js";
+import AddressUtils from "#src/utils/AddressUtils.js";
 
 interface TrainState {
     id: string;
@@ -64,7 +65,8 @@ class TrainModel extends Service<TrainState> {
         this.requestTrespassingCurrentEvent = this.requestTrespassingCurrentEvent.bind(this);
         this.onProgressEventListener = this.onProgressEventListener.bind(this);
         this.addRoute = this.addRoute.bind(this);
-        this.requestTrespassingCurrentEvent()
+        this.requestTrespassingCurrentEvent();
+        this.onEventOperations = this.onEventOperations.bind(this);
     }
 
     private trespassingInterval: number | null = null;
@@ -119,7 +121,7 @@ class TrainModel extends Service<TrainState> {
 
             const trespassingIntervalMilisec = currentEvent.state.durationMiliseconds / 100;
             let nextProgress = this.state.trespassingProgress ?? 0;
-            this.trespassingInterval = setInterval(() => {
+            this.trespassingInterval = setInterval(async () => {
                 nextProgress++;
                 this.setState({
                     trespassingProgress: nextProgress
@@ -135,10 +137,45 @@ class TrainModel extends Service<TrainState> {
                         trespassingProgress: 0
                     });
                     this.trespassingInterval = null;
-                    this.requestTrespassingCurrentEvent();
 
+                    if (currentEvent.state.operations) {
+                        await this.onEventOperations(currentEvent);
+                    }
+
+                    this.requestTrespassingCurrentEvent();
                 }
             }, trespassingIntervalMilisec);
+        }
+    }
+
+    public async onEventOperations(event: RouteEventModel) {
+        const field = GameBoard.getInstance().getField(event.state.address);
+        const loadingTime = 1000;
+
+        if (!field) {
+            return;
+        }
+
+        for (const operation of (event.state.operations ?? [])) {
+            await new Promise(res => {
+                setTimeout(() => {
+                    if (operation.type === 'dump') {
+
+                    } else if (operation.type === 'pick-up') {
+                        const amountToPick = field.state.production?.[operation.resource]?.qty ?? 0;
+                        let amountPicked = 0;
+                        for (let i = 0; i < amountToPick; i++) {
+                            const data = field.pickUpResource(operation.resource);
+                            amountPicked = amountPicked + (data[operation.resource] ?? 0)
+                            console.log("picked: ", data)
+                        }
+                        console.log("picked total: ", amountPicked);
+                        field.startProduction(operation.resource);
+                    }
+                }, loadingTime);
+
+                res(true);
+            })
         }
     }
 
@@ -156,13 +193,19 @@ class TrainModel extends Service<TrainState> {
     public setJourney(params: {
         journey: Array<TrainRouteEvent[]>
     }) {
+        console.log("setJourney")
         const journeyWithoutFirstRoute = [...params.journey];
         const firstRoute = journeyWithoutFirstRoute.shift();
 
+        console.log("warunki:", firstRoute, this.state.events)
         if (firstRoute && !this.state.events.length) {
 
             const destination = firstRoute[firstRoute.length - 1]?.address;
-            if (!destination) return;
+            console.log("setJourney - destination")
+            if (!destination) {
+                console.log("setJourney - no destination")
+                return;
+            }
 
             const events = firstRoute.map((data, order) => {
                 const event = RouteEventModel.bookEvent({
@@ -184,11 +227,14 @@ class TrainModel extends Service<TrainState> {
                 setTimeout(() => {
                     this.requestTrespassingCurrentEvent();
                 }, 150)
+            } else {
+                console.log("setJourney - nothing to do")
             }
         }
     }
 
     private requestTrespassingCurrentEvent() {
+        console.log("requestTrespassingCurrentEvent")
         const currentEvent = this.state.events.find(ev => ev.state.order === this.state.routeCurrentEvent);
         if (currentEvent) {
             currentEvent.subscribe(this.onProgressEventListener);

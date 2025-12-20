@@ -10,6 +10,7 @@ import AddressUtils from "#src/utils/AddressUtils.js";
 import GameFieldElement from "../GameFieldElement/GameFieldElement.js";
 import GameBoard from "#src/GameBoard.js";
 import BuildingKind from "#src/types/BuildingKind.js";
+import ResourceKind from "#src/types/ResourceKind.js";
 
 type TState = {
     prevAddress: Address | null;
@@ -69,6 +70,10 @@ class FieldMenuElement extends StatefullComponent<TState, TProps> {
     private dialogEl: HTMLDialogElement = document.createElement('dialog');
     private closeButton: HTMLButtonElement = document.createElement('button');
     private trainsSectionEl: HTMLDivElement = document.createElement('div');
+    private productionSectionEl: HTMLDivElement = document.createElement('div');
+    private productionSectionTerrainEl: HTMLSpanElement = document.createElement('span');
+    private productionSectionResourceEl: HTMLSpanElement = document.createElement('span');
+    private productionSectionProductionEl: HTMLSpanElement = document.createElement('span');
 
     constructor() {
         super();
@@ -211,6 +216,25 @@ class FieldMenuElement extends StatefullComponent<TState, TProps> {
                     this.trainsList.appendChild(this.getTrainsListItem(train))
                 })
             }
+
+            this.productionSectionEl.innerHTML = '';
+            this.productionSectionTerrainEl.innerHTML = `Terrain: <b>${field.state.terrain}</b>`;
+            this.productionSectionResourceEl.innerHTML = `Resource: <b>${field.state.resources.map((resource) => resource).join(', ')}</b>`;
+            this.productionSectionEl.appendChild(this.productionSectionTerrainEl);
+            this.productionSectionEl.appendChild(this.productionSectionResourceEl);
+            if (field.state.production) {
+                Object.entries(field.state.production).forEach(production => {
+                    const [key, productionState] = production;
+                    if (productionState) {
+                        const resourceKind = key as ResourceKind;
+                        const { qty, progress } = productionState;
+                        const productionRow = this.productionSectionProductionEl.cloneNode(true) as HTMLSpanElement;
+                        productionRow.innerHTML = `Production: ${resourceKind} <b>${qty}/10</b> <i>${progress}%</i>`;
+                        this.productionSectionEl.appendChild(productionRow);
+                    }
+                })
+            }
+
         }
     }
 
@@ -231,6 +255,10 @@ class FieldMenuElement extends StatefullComponent<TState, TProps> {
         this.closeButton = this.querySelector('.close-button') as HTMLButtonElement;
         this.closeButton.onclick = this.onCloseMenu;
         this.trainsSectionEl = this.querySelector(`.${classNames.trainsSection.root}`) as HTMLDivElement;
+        this.productionSectionEl = this.querySelector(`.${classNames.productionSection.root}`) as HTMLDivElement;
+        this.productionSectionTerrainEl = this.querySelector(`.${classNames.productionSection.terrain}`) as HTMLSpanElement;
+        this.productionSectionResourceEl = this.querySelector(`.${classNames.productionSection.resource}`) as HTMLSpanElement;
+        this.productionSectionProductionEl = this.querySelector(`.${classNames.productionSection.production}`) as HTMLSpanElement;
     }
 }
 
@@ -245,6 +273,11 @@ const classNames = classify(FieldMenuElement.componentName, {
         },
         orientation: 'orientation',
         actionButton: 'action-button'
+    },
+    productionSection: {
+        terrain: 'terrain',
+        resource: 'resource',
+        production: 'production'
     },
     trainsSection: {
         header: {
@@ -286,8 +319,10 @@ const innerHtml = `
             </div>
         </div>
 
-        <div>
-            PRODUCTION SECTION
+        <div class="${classNames.productionSection.root}">
+            <span class="${classNames.productionSection.terrain}">Terrain: <b>Forrest</b></span>
+            <span class="${classNames.productionSection.resource}">Resource: <b>Wood</b></span>
+            <span class="${classNames.productionSection.production}">Production: <b>3/10</b> (<i>55%</i>)</span>
         </div>
                
         <div class="${classNames.trainsSection.root}">

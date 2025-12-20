@@ -5,7 +5,7 @@ import ConstructionSite from "#src/types/ConstructionSite.js";
 import ConstructionState from "#src/types/ConstructionState.js";
 import Direction from "#src/types/Direction.js";
 import FieldVisibility from "#src/types/FieldVisibility.js";
-import MaterialKind from "#src/types/MaterialKind.js";
+import ResourceKind from "#src/types/ResourceKind.js";
 import Orientation, { OrientationHorizontal, OrientationSquare, OrientationSquareVariant, OrientationVertical } from "#src/types/Orientation.js";
 import TerrainKind from "#src/types/TerrainKind.js";
 import TrainTrespassingLight from "#src/types/TrainTresspasingLight.js";
@@ -26,16 +26,17 @@ interface FieldState {
     railwayOrientationSquareVariant: OrientationSquareVariant | null,
     building: BuildingKind | null,
     events: RouteEventModel[],
-    production: {
-        material: MaterialKind,
-        progress: number,
+    resources: ResourceKind[],
+    production: Partial<Record<ResourceKind, ({
         qty: number,
-    } | null;
+        progress: number,
+    } | undefined)>> | null;
 }
 
 class FieldModel extends Service<FieldState> {
     private _constructionInterval: number | null = null;
-    private _productionInterval: number | null = null;
+    private _productionInterval: Partial<Record<ResourceKind, number | null>> = {}
+    private _maxLoad = 10;
 
     state: FieldState;
 
@@ -62,9 +63,15 @@ class FieldModel extends Service<FieldState> {
         this.canBuildProductionBuilding = this.canBuildProductionBuilding.bind(this);
         this.buildProductionBuilding = this.buildProductionBuilding.bind(this);
         this._startProduction = this._startProduction.bind(this);
+        this.startProduction = this.startProduction.bind(this);
+        this._pauseProduction = this._pauseProduction.bind(this);
+        this.pickUpResource = this.pickUpResource.bind(this);
 
         setTimeout(() => {
-            this._startProduction();
+            Object.keys(this.state.production ?? {}).forEach(key => {
+                const resourceKind = key as ResourceKind;
+                if (resourceKind) this._startProduction(resourceKind);
+            });
         }, 1000)
     }
 
@@ -72,11 +79,13 @@ class FieldModel extends Service<FieldState> {
         if (this.state.visibility === FieldVisibility.Visible) {
             return;
         }
+        const terrainKind = Terrain.getTerrainKind({ address: this.state.address });
         this.setState({
             visibility: FieldVisibility.Visible,
-            terrain: Terrain.getTerrainKind({ address: this.state.address }),
+            terrain: terrainKind,
             terrainImageNumber: Math.round(Math.random() * 3) + 1 as 1 | 2 | 3 | 4,
             terrainImageRotation: Math.round(Math.random() * 3) + 1 as 1 | 2 | 3 | 4,
+            resources: Terrain.ResourcesByTerrainMap[terrainKind]
         })
     }
 
@@ -130,22 +139,48 @@ class FieldModel extends Service<FieldState> {
         });
     }
 
-    private async _startProduction() {
-        if (this._productionInterval) {
+    private _pauseProduction(resourceKind: ResourceKind): boolean {
+        if (((this.state.production?.[resourceKind]?.qty) ?? 0) >= this._maxLoad) {
+            if (this._productionInterval[resourceKind]) {
+                clearInterval(this._productionInterval[resourceKind]);
+            }
+            this.setState({
+                production: {
+                    ...(this.state.production ?? {}),
+                    [resourceKind]: {
+                        qty: this._maxLoad,
+                        progress: 0,
+                    }
+                }
+            });
+            return true;
+        }
+        return false;
+    }
+
+    private async _startProduction(resourceKind: ResourceKind) {
+        if (this._pauseProduction(resourceKind)) {
             return;
         }
 
-        if (!this.state.production) {
+        if (this._productionInterval[resourceKind]) {
             return;
         }
 
-        const maxLoad = 10;
+        if (!this.state.production || !this.state.production[resourceKind]) {
+            return;
+        }
+
         const onePercentDurationMilisec = 10;
 
-        this._productionInterval = setInterval(() => {
-            const production = this.state.production;
-            if (!production && this._productionInterval) {
-                clearInterval(this._productionInterval);
+        this._productionInterval[resourceKind] = setInterval(() => {
+            if (this._pauseProduction(resourceKind)) {
+                return;
+            }
+
+            const production = this.state.production?.[resourceKind];
+            if (!production && this._productionInterval[resourceKind]) {
+                clearInterval(this._productionInterval[resourceKind]);
                 return;
             } else if (!production) {
                 return;
@@ -158,7 +193,7 @@ class FieldModel extends Service<FieldState> {
 
             if (currentProgress >= 100) {
                 nextQty = currentQty + 1;
-                nextQty = nextQty > maxLoad ? maxLoad : nextQty;
+                nextQty = nextQty > this._maxLoad ? this._maxLoad : nextQty;
                 nextProgress = 0;
             } else {
                 nextQty = currentQty;
@@ -167,14 +202,40 @@ class FieldModel extends Service<FieldState> {
 
             this.setState({
                 production: {
-                    ...production,
-                    qty: nextQty,
-                    progress: nextProgress,
+                    ...this.state.production,
+                    [resourceKind]: {
+                        qty: nextQty,
+                        progress: nextProgress,
+                    }
                 }
             })
 
-            console.log('prod', production)
         }, onePercentDurationMilisec);
+    }
+
+    public async startProduction(resourceKind: ResourceKind) {
+        await this._startProduction(resourceKind)
+    }
+
+    public pickUpResource(resourceKind: ResourceKind) {
+        if ((this.state.production?.[resourceKind]?.qty ?? 0) > 0) {
+            this.setState({
+                production: {
+                    ...(this.state.production ?? {}),
+                    [resourceKind]: {
+                        ...(this.state.production?.[resourceKind] ?? {}),
+                        qty: (this.state.production?.[resourceKind]?.qty ?? 1) - 1,
+                    }
+                }
+            });
+            return {
+                [resourceKind]: 1,
+            }
+        }
+
+        return {
+            [resourceKind]: 0
+        }
     }
 
     public canBuildRailway(orientation: Orientation, orientationSquareVariant?: OrientationSquareVariant | null) {
@@ -367,12 +428,13 @@ class FieldModel extends Service<FieldState> {
             this.setState({
                 building: BuildingKind.Timber,
                 production: {
-                    material: MaterialKind.Wood,
-                    progress: 0,
-                    qty: 0,
+                    [ResourceKind.Wood]: {
+                        progress: 0,
+                        qty: 0,
+                    },
                 }
             });
-            this._startProduction();
+            this._startProduction(ResourceKind.Wood);
         }
     }
 
@@ -541,6 +603,7 @@ class FieldModel extends Service<FieldState> {
             building: null,
             constructionSite: null,
             events: [],
+            resources: [],
             production: null,
         });
     }

@@ -68,6 +68,7 @@ class OperationIndicatorElement extends HTMLElement {
             }
             const route = Pathfinder.performAStarRouteSearching(routeParams);
             if (!route) return;
+            console.log("set route", route)
             GameBoard.ServicesRegistry.actionsMenu.onTrainSetRoute({
                 trainId: currentTrain.state.id,
                 route

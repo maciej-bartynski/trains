@@ -1,4 +1,5 @@
 import Service from "#src/framework/Service/Service.js";
+import ResourceKind from "#src/types/ResourceKind";
 import TrainRouteEvent from "#src/types/TrainTrespassingEvent.js";
 import TrainTrespassingLight from "#src/types/TrainTresspasingLight.js";
 
@@ -6,6 +7,10 @@ type RouteEventState = TrainRouteEvent & {
     trainId: string,
     state: 'before' | 'progress' | 'after',
     order: number,
+    operations?: ({
+        type: 'pick-up' | 'dump',
+        resource: ResourceKind,
+    }[]) | undefined
 }
 
 class RouteEventModel extends Service<RouteEventState> {
@@ -24,6 +29,7 @@ class RouteEventModel extends Service<RouteEventState> {
         this.onBefore = this.onBefore.bind(this);
         this.lightGreen = this.lightGreen.bind(this);
         this.lightRed = this.lightRed.bind(this);
+        this.defineOperations = this.defineOperations.bind(this)
     }
 
     static bookEvent(params: {
@@ -76,6 +82,12 @@ class RouteEventModel extends Service<RouteEventState> {
                 state: 'after'
             });
         }
+    }
+
+    public defineOperations(operations: RouteEventModel['state']['operations']) {
+        this.setState({
+            operations: operations!
+        })
     }
 
     static fromJSON(json: RouteEventState): RouteEventModel {

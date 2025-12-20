@@ -125,6 +125,28 @@ field-menu {
     padding-left: 20px;
 }
 
+.field-menu_productionSection {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+}
+
+.field-menu_productionSection_terrain {
+    font-size: 10px;
+    color: white;
+}
+
+.field-menu_productionSection_resource {
+    font-size: 10px;
+    color: white;
+}
+
+.field-menu_productionSection_production {
+    font-size: 10px;
+    color: white;
+}
+
 /* .field-menu_trainsSection {}
 
 .field-menu_trainsSection_header {}

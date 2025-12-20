@@ -2,6 +2,7 @@ import AdjacentFields from "#src/utils/AdjacentFields.js";
 import TerrainKind from "#src/types/TerrainKind.js";
 import Address from "#src/types/Address";
 import FieldModel from "#src/models/FieldModel.js";
+import ResourceKind from "#src/types/ResourceKind.js";
 
 const isWater = (terrain: TerrainKind): boolean => {
     return terrain === TerrainKind.Water || terrain === TerrainKind.WaterCold;
@@ -306,8 +307,20 @@ function getTerrainKind(params: {
     return dice[roll] ?? TerrainKind.Plain;
 }
 
+const ResourcesByTerrainMap: Record<TerrainKind, ResourceKind[]> = {
+    [TerrainKind.Forest]: [ResourceKind.Wood, ResourceKind.Coal],
+    [TerrainKind.Plain]: [ResourceKind.Clay],
+    [TerrainKind.Hills]: [ResourceKind.Iron, ResourceKind.Stone, ResourceKind.Clay],
+    [TerrainKind.Desert]: [],
+    [TerrainKind.Swamp]: [ResourceKind.Coal],
+    [TerrainKind.Water]: [],
+    [TerrainKind.WaterCold]: [],
+    [TerrainKind.Ice]: [ResourceKind.Iron]
+}
+
 const Terrain = {
     getTerrainKind,
+    ResourcesByTerrainMap
 }
 
 export default Terrain;

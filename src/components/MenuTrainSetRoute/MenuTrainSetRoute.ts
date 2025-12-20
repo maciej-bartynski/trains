@@ -2,9 +2,9 @@ import TrainAtom from "#src/atoms/TrainAtom/TrainAtom.js";
 import StatefullComponent from "#src/framework/StatefullComponent/StatefullComponent.js";
 import GameBoard from "#src/GameBoard.js";
 import TrainModel from "#src/models/TrainModel.js";
-// import actionsMenuService from "#src/service/ActionsMenuService/index.js";
 import ActionsMenuOptionName from "#src/service/ActionsMenuService/types.js";
 import Address from "#src/types/Address.js";
+import ResourceKind from "#src/types/ResourceKind.js";
 import TrainRouteEvent from "#src/types/TrainTrespassingEvent.js";
 import classify from "#src/utils/classify.js";
 import GameFieldElement from "../GameFieldElement/GameFieldElement.js";
@@ -97,9 +97,21 @@ class MenuTrainSetRoute extends StatefullComponent<ElementState, ElementProps> {
                     ...train.state.events.map(e => e.state)
                 ], ...train.state.journey]
                 : train.state.journey;
+
             routesToRender.forEach(route => {
                 const destinationAddress = route[route.length - 1]?.address;
-                if (destinationAddress) {
+                const destinationEvent = route[route.length - 1];
+                const fieldModel = destinationAddress ? GameBoard.getInstance().getField(destinationAddress) : null;
+
+                if (destinationAddress && fieldModel && destinationEvent) {
+                    const producedResources: ResourceKind[] = [];
+                    Object.entries(fieldModel.state.production ?? {}).forEach(entry => {
+                        const [key, data] = entry as [ResourceKind, any];
+                        if (data) {
+                            producedResources.push(key);
+                        }
+                    });
+
                     const listItem = this.destinationsListItem.cloneNode(true) as HTMLLIElement;
                     listItem.innerHTML = `
                         <div class="${classNames.destinations.destination} list_item">
@@ -120,6 +132,15 @@ class MenuTrainSetRoute extends StatefullComponent<ElementState, ElementProps> {
                     `;
                     const fieldCell = listItem.querySelector(`.${classNames.destinations.field}`) as HTMLDivElement;
                     const fieldEl = GameFieldElement.renderPreviewDuplicate(destinationAddress);
+                    const actButton = listItem.querySelector(`.${classNames.destinations.act}`) as HTMLButtonElement;
+                    if (producedResources.length) {
+                        actButton.innerText = `Load`;
+                        actButton.onclick = () => {
+                            train.state.events
+                        }
+                    } else {
+                        actButton?.remove();
+                    }
                     if (fieldEl) fieldCell.appendChild(fieldEl);
                     this.desinationsList.appendChild(listItem);
                 }

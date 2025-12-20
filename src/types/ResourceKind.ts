@@ -1,4 +1,4 @@
-enum MaterialKind {
+enum ResourceKind {
     Wood = 'wood',
     Stone = 'stone',
     Iron = 'iron',
@@ -6,4 +6,4 @@ enum MaterialKind {
     Coal = 'coal'
 }
 
-export default MaterialKind;
+export default ResourceKind;
