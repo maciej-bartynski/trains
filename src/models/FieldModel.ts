@@ -9,7 +9,6 @@ import ResourceKind from "#src/types/ResourceKind.js";
 import Orientation, { OrientationHorizontal, OrientationSquare, OrientationSquareVariant, OrientationVertical } from "#src/types/Orientation.js";
 import TerrainKind from "#src/types/TerrainKind.js";
 import TrainTrespassingLight from "#src/types/TrainTresspasingLight.js";
-import AddressUtils from "#src/utils/AddressUtils.js";
 import AdjacentFields from "#src/utils/AdjacentFields.js";
 import OrientationUtils from "#src/utils/OrientationUtils.js";
 import Terrain from "#src/utils/Terrain.js";
@@ -31,6 +30,7 @@ interface FieldState {
         qty: number,
         progress: number,
     } | undefined)>> | null;
+    storage?: Partial<Record<ResourceKind, number>>
 }
 
 class FieldModel extends Service<FieldState> {
@@ -66,6 +66,7 @@ class FieldModel extends Service<FieldState> {
         this.startProduction = this.startProduction.bind(this);
         this._pauseProduction = this._pauseProduction.bind(this);
         this.pickUpResource = this.pickUpResource.bind(this);
+        this.dumpResource = this.dumpResource.bind(this);
 
         setTimeout(() => {
             Object.keys(this.state.production ?? {}).forEach(key => {
@@ -217,7 +218,16 @@ class FieldModel extends Service<FieldState> {
         await this._startProduction(resourceKind)
     }
 
-    public pickUpResource(resourceKind: ResourceKind) {
+    public dumpResource(resourceKind: ResourceKind, qty: number) {
+        this.setState({
+            storage: {
+                ...(this.state.storage ?? {}),
+                [resourceKind]: (this.state.storage?.[resourceKind] ?? 0) + qty
+            }
+        });
+    }
+
+    public pickUpResource(resourceKind: ResourceKind): [ResourceKind, number] {
         if ((this.state.production?.[resourceKind]?.qty ?? 0) > 0) {
             this.setState({
                 production: {
@@ -228,14 +238,10 @@ class FieldModel extends Service<FieldState> {
                     }
                 }
             });
-            return {
-                [resourceKind]: 1,
-            }
+            return [resourceKind, 1]
         }
 
-        return {
-            [resourceKind]: 0
-        }
+        return [resourceKind, 0]
     }
 
     public canBuildRailway(orientation: Orientation, orientationSquareVariant?: OrientationSquareVariant | null) {
@@ -566,10 +572,6 @@ class FieldModel extends Service<FieldState> {
 
     public unregisterEvent(routeEvent: RouteEventModel) {
         routeEvent.unsubscribe(this.onEventUpdate)
-
-        if (AddressUtils.isAddressEqual(routeEvent.state.address, { column: 13, row: 10 })) {
-            console.log("unregister!", this)
-        }
         this.setState({
             events: this.state.events.filter(event => {
                 return event !== routeEvent;
@@ -605,6 +607,7 @@ class FieldModel extends Service<FieldState> {
             events: [],
             resources: [],
             production: null,
+            storage: {}
         });
     }
 

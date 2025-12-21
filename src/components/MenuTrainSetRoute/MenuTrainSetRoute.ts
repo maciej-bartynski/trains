@@ -4,6 +4,7 @@ import GameBoard from "#src/GameBoard.js";
 import TrainModel from "#src/models/TrainModel.js";
 import ActionsMenuOptionName from "#src/service/ActionsMenuService/types.js";
 import Address from "#src/types/Address.js";
+import BuildingKind from "#src/types/BuildingKind.js";
 import ResourceKind from "#src/types/ResourceKind.js";
 import TrainRouteEvent from "#src/types/TrainTrespassingEvent.js";
 import classify from "#src/utils/classify.js";
@@ -94,23 +95,30 @@ class MenuTrainSetRoute extends StatefullComponent<ElementState, ElementProps> {
 
             const routesToRender = train.state.events.length
                 ? [[
-                    ...train.state.events.map(e => e.state)
+                    ...train.state.events, //.map(e => e.state)
                 ], ...train.state.journey]
                 : train.state.journey;
 
             routesToRender.forEach(route => {
-                const destinationAddress = route[route.length - 1]?.address;
+                const destinationAddress = route[route.length - 1]?.state.address;
                 const destinationEvent = route[route.length - 1];
                 const fieldModel = destinationAddress ? GameBoard.getInstance().getField(destinationAddress) : null;
 
                 if (destinationAddress && fieldModel && destinationEvent) {
                     const producedResources: ResourceKind[] = [];
+                    const takesResources: ResourceKind[] = [];
                     Object.entries(fieldModel.state.production ?? {}).forEach(entry => {
                         const [key, data] = entry as [ResourceKind, any];
                         if (data) {
                             producedResources.push(key);
                         }
                     });
+
+                    if (fieldModel.state.building === BuildingKind.RailwayStation) {
+                        Object.entries(ResourceKind).forEach(entry => {
+                            takesResources.push(entry[1])
+                        });
+                    }
 
                     const listItem = this.destinationsListItem.cloneNode(true) as HTMLLIElement;
                     listItem.innerHTML = `
@@ -122,8 +130,11 @@ class MenuTrainSetRoute extends StatefullComponent<ElementState, ElementProps> {
                             <div class="${classNames.destinations.distance}">
                                 Distance: ${route.length}
                             </div>
-                            <button class="${classNames.destinations.act}">
+                            <button data-load class="${classNames.destinations.act}">
                                 Act
+                            </button>
+                            <button data-unload class="${classNames.destinations.act}">
+                                Act 2
                             </button>
                         </div>
                         <div class="${classNames.destinations.operations}">
@@ -132,14 +143,34 @@ class MenuTrainSetRoute extends StatefullComponent<ElementState, ElementProps> {
                     `;
                     const fieldCell = listItem.querySelector(`.${classNames.destinations.field}`) as HTMLDivElement;
                     const fieldEl = GameFieldElement.renderPreviewDuplicate(destinationAddress);
-                    const actButton = listItem.querySelector(`.${classNames.destinations.act}`) as HTMLButtonElement;
+                    const loadButton = listItem.querySelector('[data-load]') as HTMLButtonElement;
+                    const unloadButton = listItem.querySelector('[data-unload]') as HTMLButtonElement;
                     if (producedResources.length) {
-                        actButton.innerText = `Load`;
-                        actButton.onclick = () => {
-                            train.state.events
+                        loadButton.innerText = `Load`;
+                        loadButton.onclick = () => {
+                            destinationEvent.defineOperations([{
+                                resource: ResourceKind.Wood,
+                                type: 'pick-up'
+                            }]);
+
+                            console.log('r, ', route)
                         }
                     } else {
-                        actButton?.remove();
+                        loadButton?.remove();
+                    }
+
+                    if (takesResources.length) {
+                        unloadButton.innerText = `Unload`;
+                        unloadButton.onclick = () => {
+
+                            console.log('r-, ', route)
+                            destinationEvent.defineOperations([{
+                                resource: ResourceKind.Wood,
+                                type: 'dump'
+                            }]);
+                        }
+                    } else {
+                        unloadButton?.remove();
                     }
                     if (fieldEl) fieldCell.appendChild(fieldEl);
                     this.desinationsList.appendChild(listItem);
@@ -151,7 +182,7 @@ class MenuTrainSetRoute extends StatefullComponent<ElementState, ElementProps> {
                 this.goCta.onclick = () => {
                     const firstRoute = train.state.journey[0];
                     const firstDestination = firstRoute
-                        ? firstRoute[firstRoute.length - 1]?.address
+                        ? firstRoute[firstRoute.length - 1]?.state.address
                         : null;
                     if (firstDestination && train.state.journey.length) {
                         train.setJourney({ journey: train.state.journey })

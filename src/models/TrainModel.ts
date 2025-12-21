@@ -1,23 +1,23 @@
 import GameBoard from "#src/GameBoard.js";
 import Address from "#src/types/Address.js";
 import Direction from "#src/types/Direction.js";
-import TrainRouteEvent from "#src/types/TrainTrespassingEvent.js";
 import Service from "#src/framework/Service/Service.js";
 import RouteEventModel from "./RouteEventModel.js";
 import TrainTrespassingLight from "#src/types/TrainTresspasingLight.js";
-import AddressUtils from "#src/utils/AddressUtils.js";
+import ResourceKind from "#src/types/ResourceKind.js";
 
 interface TrainState {
     id: string;
     name: string;
     location: Address; // if equall to route[0].address, it's departuring.
     direction: Direction | null; // if null, it's Awaiting on node center. If route[0].from is null, it's departuring.
-    journey: Array<TrainRouteEvent[]>;
+    journey: Array<RouteEventModel[]>;
     routeCurrentEvent: number;
     events: RouteEventModel[];
     destination: Address | null;
     randomColor: string;
     trespassingProgress: number;
+    cargo?: Partial<Record<ResourceKind, number>>
 }
 
 const colors = [
@@ -60,6 +60,16 @@ class TrainModel extends Service<TrainState> {
                 return null;
             }
         }).filter(item => !!item);
+        this.state.journey = params.journey.map(route => {
+            return route.map(event => {
+                if (event instanceof RouteEventModel) {
+                    return event;
+                } else {
+                    const eventModel = RouteEventModel.fromJSON(event);
+                    return eventModel;
+                }
+            })
+        })
         this.setJourney = this.setJourney.bind(this);
         this.toJSON = this.toJSON.bind(this);
         this.requestTrespassingCurrentEvent = this.requestTrespassingCurrentEvent.bind(this);
@@ -150,37 +160,52 @@ class TrainModel extends Service<TrainState> {
 
     public async onEventOperations(event: RouteEventModel) {
         const field = GameBoard.getInstance().getField(event.state.address);
-        const loadingTime = 1000;
+        const loadingTime = 500;
+        const allOperations = event.state.operations ?? [];
+        const nextCargo = this.state.cargo ?? {};
 
-        if (!field) {
+        if (!field || !allOperations.length) {
             return;
         }
 
-        for (const operation of (event.state.operations ?? [])) {
-            await new Promise(res => {
-                setTimeout(() => {
-                    if (operation.type === 'dump') {
+        for (const operation of allOperations) {
 
-                    } else if (operation.type === 'pick-up') {
-                        const amountToPick = field.state.production?.[operation.resource]?.qty ?? 0;
-                        let amountPicked = 0;
-                        for (let i = 0; i < amountToPick; i++) {
-                            const data = field.pickUpResource(operation.resource);
-                            amountPicked = amountPicked + (data[operation.resource] ?? 0)
-                            console.log("picked: ", data)
-                        }
-                        console.log("picked total: ", amountPicked);
-                        field.startProduction(operation.resource);
-                    }
-                }, loadingTime);
+            const resourceKind = operation.resource;
+            const operationType = operation.type;
 
-                res(true);
-            })
+            if (operationType === 'dump') {
+                while (this.state.cargo?.[resourceKind] ?? 0) {
+                    const qtyAtOneDump = 1;
+                    field.dumpResource(resourceKind, qtyAtOneDump)
+                    nextCargo[resourceKind] = nextCargo[resourceKind]
+                        ? nextCargo[resourceKind] - qtyAtOneDump
+                        : 0;
+                    await new Promise(res => setTimeout(res, loadingTime));
+                }
+            }
+
+            if (operationType === 'pick-up') {
+                while (field.state.production?.[resourceKind]?.qty ?? 0) {
+                    const [, amount] = field.pickUpResource(operation.resource);
+                    nextCargo[resourceKind] = nextCargo[resourceKind]
+                        ? nextCargo[resourceKind] + amount
+                        : amount;
+                    await new Promise(res => setTimeout(res, loadingTime));
+                }
+            }
         }
+
+        for (const operation of allOperations) {
+            field.startProduction(operation.resource);
+        }
+
+        this.setState({
+            cargo: nextCargo
+        })
     }
 
     public addRoute(params: {
-        route: TrainRouteEvent[]
+        route: RouteEventModel[]
     }) {
         this.setState({
             journey: [
@@ -191,28 +216,21 @@ class TrainModel extends Service<TrainState> {
     }
 
     public setJourney(params: {
-        journey: Array<TrainRouteEvent[]>
+        journey: Array<RouteEventModel[]>
     }) {
-        console.log("setJourney")
         const journeyWithoutFirstRoute = [...params.journey];
         const firstRoute = journeyWithoutFirstRoute.shift();
-
-        console.log("warunki:", firstRoute, this.state.events)
         if (firstRoute && !this.state.events.length) {
-
-            const destination = firstRoute[firstRoute.length - 1]?.address;
-            console.log("setJourney - destination")
+            const destination = firstRoute[firstRoute.length - 1]?.state.address;
             if (!destination) {
-                console.log("setJourney - no destination")
                 return;
             }
 
             const events = firstRoute.map((data, order) => {
-                const event = RouteEventModel.bookEvent({
-                    ...data,
-                    trainId: this.state.id,
-                    order,
-                });
+                data.state.trainId = this.state.id;
+                data.state.state = 'before';
+                data.state.order = order;
+                const event = RouteEventModel.bookEvent(data);
                 return event;
             });
 
@@ -227,14 +245,11 @@ class TrainModel extends Service<TrainState> {
                 setTimeout(() => {
                     this.requestTrespassingCurrentEvent();
                 }, 150)
-            } else {
-                console.log("setJourney - nothing to do")
             }
         }
     }
 
     private requestTrespassingCurrentEvent() {
-        console.log("requestTrespassingCurrentEvent")
         const currentEvent = this.state.events.find(ev => ev.state.order === this.state.routeCurrentEvent);
         if (currentEvent) {
             currentEvent.subscribe(this.onProgressEventListener);
@@ -269,7 +284,8 @@ class TrainModel extends Service<TrainState> {
             direction: null,
             destination: null,
             randomColor,
-            trespassingProgress: 0
+            trespassingProgress: 0,
+            cargo: {}
         });
 
         return newModel;

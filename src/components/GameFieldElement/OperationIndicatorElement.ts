@@ -1,5 +1,4 @@
 import GameBoard from "#src/GameBoard.js";
-// import actionsMenuService from "#src/service/ActionsMenuService/index.js";
 import Address from "#src/types/Address.js";
 import BuildingKind from "#src/types/BuildingKind.js";
 import BuildingOrientationUtils from "#src/utils/BuildingOrientationUtils.js";
@@ -7,6 +6,7 @@ import ActionsMenuOptionName from "#src/service/ActionsMenuService/types.js";
 import Orientation, { OrientationSquareVariant } from "#src/types/Orientation.js";
 import AddressUtils from "#src/utils/AddressUtils.js";
 import Pathfinder from "#src/utils/Pathfinder.js";
+import RouteEventModel from "#src/models/RouteEventModel.js";
 
 class OperationIndicatorElement extends HTMLElement {
     static componentName = 'operation-indicator-element';
@@ -47,7 +47,6 @@ class OperationIndicatorElement extends HTMLElement {
 
     private async onSelectDestination() {
         const state = GameBoard.ServicesRegistry.actionsMenu.state;
-
         if (state.action?.type === ActionsMenuOptionName.TrainSetRoute && this.address) {
             const setRouteAction = state.action.payload;
             const currentTrain = GameBoard.getInstance().getTrain(setRouteAction.trainId);
@@ -60,15 +59,22 @@ class OperationIndicatorElement extends HTMLElement {
                 ? lastRoute[lastRoute.length - 1]
                 : null;
             const location = lastDesination
-                ? lastDesination.address
+                ? lastDesination.state.address
                 : currentTrain.state.location;
             const routeParams = {
                 location,
                 destination: currentField.state.address,
             }
-            const route = Pathfinder.performAStarRouteSearching(routeParams);
-            if (!route) return;
-            console.log("set route", route)
+
+            const _route = Pathfinder.performAStarRouteSearching(routeParams);
+            if (!_route) return;
+            const route = _route.map((routeState, idx) => RouteEventModel.fromJSON({
+                ...routeState,
+                trainId: currentTrain.state.id,
+                order: idx,
+                state: 'before',
+
+            }))
             GameBoard.ServicesRegistry.actionsMenu.onTrainSetRoute({
                 trainId: currentTrain.state.id,
                 route

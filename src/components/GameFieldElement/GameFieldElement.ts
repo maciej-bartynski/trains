@@ -96,6 +96,7 @@ class GameFieldElement extends HTMLElement {
         const field = address ? GameBoard.getInstance().getField(address) : null;
 
         const skippedActions = [ActionsMenuOptionName.BuildTrain, ActionsMenuOptionName.TrainSetRoute, ActionsMenuOptionName.TrainsList]
+
         if (skippedActions.includes(GameBoard.ServicesRegistry.actionsMenu.state.action?.type as any)) {
             return;
         }

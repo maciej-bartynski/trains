@@ -1,3 +1,4 @@
+import RouteEventModel from "#src/models/RouteEventModel"
 import Address from "#src/types/Address"
 import BuildingKind from "#src/types/BuildingKind"
 import Orientation, { OrientationSquareVariant } from "#src/types/Orientation.js"
@@ -47,7 +48,7 @@ type TrainSetRouteOption = {
     type: ActionsMenuOptionName.TrainSetRoute,
     payload: {
         trainId: string,
-        routes?: Array<TrainRouteEvent[]> | undefined
+        routes?: Array<RouteEventModel[]> | undefined
     }
 }
 

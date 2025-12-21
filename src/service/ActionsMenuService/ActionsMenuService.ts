@@ -1,5 +1,6 @@
 import Service from "#src/framework/Service/Service.js";
 import GameBoard from "#src/GameBoard.js";
+import RouteEventModel from "#src/models/RouteEventModel.js";
 import Address from "#src/types/Address.js";
 import BuildingKind from "#src/types/BuildingKind.js";
 import Orientation, { OrientationSquareVariant } from "#src/types/Orientation.js";
@@ -122,8 +123,8 @@ class ActionsMenuService extends Service<ActionsMenuServiceState> {
         })
     }
 
-    onTrainSetRoute(params: { trainId: string, route?: TrainRouteEvent[] }) {
-        let nextRoutes: undefined | Array<TrainRouteEvent[]> = undefined;
+    onTrainSetRoute(params: { trainId: string, route?: RouteEventModel[] }) {
+        let nextRoutes: undefined | Array<RouteEventModel[]> = undefined;
         const currentState = this.state.action;
 
         if (params.route && this.isTrainSetRoute(currentState)) {
@@ -134,7 +135,6 @@ class ActionsMenuService extends Service<ActionsMenuServiceState> {
         if (train && params.route) {
             train.addRoute({ route: params.route })
         }
-
         this.setState({
             action: {
                 type: ActionsMenuOptionName.TrainSetRoute,

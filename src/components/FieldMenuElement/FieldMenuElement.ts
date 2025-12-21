@@ -54,6 +54,7 @@ class FieldMenuElement extends StatefullComponent<TState, TProps> {
         listItemContent.onmouseenter = () => trainEl?.classList.add('--moving');
         listItemContent.onmouseleave = () => trainEl?.classList.remove('--moving');
         const btn = listItemContent.querySelector('button') as HTMLButtonElement;
+
         btn.onclick = () => {
             this.onCloseMenu();
             GameBoard.ServicesRegistry.actionsMenu.onTrainSetRoute({ trainId: train.id });
@@ -74,6 +75,8 @@ class FieldMenuElement extends StatefullComponent<TState, TProps> {
     private productionSectionTerrainEl: HTMLSpanElement = document.createElement('span');
     private productionSectionResourceEl: HTMLSpanElement = document.createElement('span');
     private productionSectionProductionEl: HTMLSpanElement = document.createElement('span');
+    private storageSectionRowEl: HTMLDivElement = document.createElement('div');
+    private storageSection: HTMLDivElement = document.createElement('div');
 
     constructor() {
         super();
@@ -90,6 +93,7 @@ class FieldMenuElement extends StatefullComponent<TState, TProps> {
     }
 
     public onOpenMenu(params: { fieldAddress: Address }) {
+
         const newPrevAddress = this.state.currAddress;
         const newCurrAddress = params.fieldAddress;
 
@@ -116,7 +120,8 @@ class FieldMenuElement extends StatefullComponent<TState, TProps> {
             Object
                 .entries(Service.gameBoard.state.trains)
                 .forEach(([trainId, trainModel]) => {
-                    trainModel.subscribe(this.subscribeTrainTresspasing)
+                    trainModel.subscribe(this.subscribeTrainTresspasing);
+                    this.subscribeTrainTresspasing(trainModel['state'])
                 })
 
             this.dialogEl.show();
@@ -147,18 +152,21 @@ class FieldMenuElement extends StatefullComponent<TState, TProps> {
     }
 
     private subscribeTrainTresspasing(trainState: TrainModel['state']) {
+        const prevState = JSON.stringify([...this.state.trainsLocatedHere].sort() ?? [])
         const trainIsLocatedHere = this.state.currAddress && AddressUtils.isAddressEqual(trainState.location, this.state.currAddress);
         const trainIsNotYetAdded = !this.state.trainsLocatedHere.some(train => train.id === trainState.id);
         let nextState: TrainModel['state'][] = [...this.state.trainsLocatedHere];
+
         if (trainIsLocatedHere && trainIsNotYetAdded) {
             nextState.push(trainState)
         } else if (!trainIsLocatedHere) {
             nextState = nextState.filter(train => train.id !== trainState.id)
         }
-
-        this.setState({
-            trainsLocatedHere: nextState
-        })
+        if (prevState !== JSON.stringify([...nextState].sort())) {
+            this.setState({
+                trainsLocatedHere: nextState
+            })
+        }
     }
 
     override render(): void {
@@ -204,6 +212,7 @@ class FieldMenuElement extends StatefullComponent<TState, TProps> {
                 this.trainsListTitle.innerText = 'No trains are located here.';
                 this.trainsList.innerHTML = '';
                 this.state.trainsLocatedHere.forEach(train => {
+                    this.trainsSectionEl.style.display = 'block';
                     this.trainsListTitle.innerText = 'Trains located here:'
                     this.trainsList.appendChild(this.getTrainsListItem(train))
                 })
@@ -234,6 +243,20 @@ class FieldMenuElement extends StatefullComponent<TState, TProps> {
                     }
                 })
             }
+            this.storageSectionRowEl.innerHTML = '';
+            this.storageSection.style.display = 'none'
+
+            if (field.state.storage) {
+                this.storageSection.style.display = 'block'
+                let storageRowInnerHtml = ``;
+                Object.entries(field.state.storage).forEach(entry => {
+                    const [resource, storageQty] = entry;
+                    storageRowInnerHtml += `
+                        <span class="${classNames.storageSection.rowItem}">${resource}: <b>${storageQty}</b></span>
+                    `;
+                });
+                this.storageSectionRowEl.innerHTML = storageRowInnerHtml;
+            }
 
         }
     }
@@ -259,6 +282,8 @@ class FieldMenuElement extends StatefullComponent<TState, TProps> {
         this.productionSectionTerrainEl = this.querySelector(`.${classNames.productionSection.terrain}`) as HTMLSpanElement;
         this.productionSectionResourceEl = this.querySelector(`.${classNames.productionSection.resource}`) as HTMLSpanElement;
         this.productionSectionProductionEl = this.querySelector(`.${classNames.productionSection.production}`) as HTMLSpanElement;
+        this.storageSectionRowEl = this.querySelector(`.${classNames.storageSection.row}`) as HTMLDivElement;
+        this.storageSection = this.querySelector(`.${classNames.storageSection.root}`) as HTMLDivElement;
     }
 }
 
@@ -278,6 +303,11 @@ const classNames = classify(FieldMenuElement.componentName, {
         terrain: 'terrain',
         resource: 'resource',
         production: 'production'
+    },
+    storageSection: {
+        head: 'head',
+        row: 'row',
+        rowItem: 'rowItem'
     },
     trainsSection: {
         header: {
@@ -323,6 +353,14 @@ const innerHtml = `
             <span class="${classNames.productionSection.terrain}">Terrain: <b>Forrest</b></span>
             <span class="${classNames.productionSection.resource}">Resource: <b>Wood</b></span>
             <span class="${classNames.productionSection.production}">Production: <b>3/10</b> (<i>55%</i>)</span>
+        </div>
+
+        <div class="${classNames.storageSection.root}">
+            <span class="${classNames.storageSection.head}"><b>Storage</b></span>
+            <div class="${classNames.storageSection.row}">
+                <span class="${classNames.storageSection.rowItem}">Wood: <b>3/10</b></span>
+                <span class="${classNames.storageSection.rowItem}">Clay: <b>2/10</b></span>
+            </div>
         </div>
                
         <div class="${classNames.trainsSection.root}">

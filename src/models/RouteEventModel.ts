@@ -32,17 +32,14 @@ class RouteEventModel extends Service<RouteEventState> {
         this.defineOperations = this.defineOperations.bind(this)
     }
 
-    static bookEvent(params: {
-        trainId: string,
-        order: number
-    } & TrainRouteEvent): RouteEventModel | void {
-        const train = Service.gameBoard.getTrain(params.trainId);
-        const field = Service.gameBoard.getField(params.address);
+    static bookEvent(event: RouteEventModel): RouteEventModel | void {
+        const train = Service.gameBoard.getTrain(event.state.trainId);
+        const field = Service.gameBoard.getField(event.state.address);
         if (train && field) {
-            const event = new RouteEventModel({
-                state: 'before',
-                ...params,
-            });
+            // const event = new RouteEventModel({
+            //     state: 'before',
+            //     ...params,
+            // });
             field.registerEvent(event);
             return event;
         }
