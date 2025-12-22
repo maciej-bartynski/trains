@@ -144,6 +144,7 @@ class FieldModel extends Service<FieldState> {
         if (((this.state.production?.[resourceKind]?.qty) ?? 0) >= this._maxLoad) {
             if (this._productionInterval[resourceKind]) {
                 clearInterval(this._productionInterval[resourceKind]);
+                this._productionInterval[resourceKind] = null;
             }
             this.setState({
                 production: {
@@ -160,15 +161,19 @@ class FieldModel extends Service<FieldState> {
     }
 
     private async _startProduction(resourceKind: ResourceKind) {
+        console.log("start 3", resourceKind)
         if (this._pauseProduction(resourceKind)) {
+            console.log("start 4", resourceKind)
             return;
         }
 
         if (this._productionInterval[resourceKind]) {
+            console.log("start 5", resourceKind, this._productionInterval[resourceKind])
             return;
         }
 
         if (!this.state.production || !this.state.production[resourceKind]) {
+            console.log("start 6", resourceKind)
             return;
         }
 
@@ -176,17 +181,22 @@ class FieldModel extends Service<FieldState> {
 
         this._productionInterval[resourceKind] = setInterval(() => {
             if (this._pauseProduction(resourceKind)) {
+                console.log("start 7", resourceKind)
                 return;
             }
 
             const production = this.state.production?.[resourceKind];
             if (!production && this._productionInterval[resourceKind]) {
                 clearInterval(this._productionInterval[resourceKind]);
+                this._productionInterval[resourceKind] = null;
+                console.log("start 8", resourceKind)
                 return;
             } else if (!production) {
+                console.log("start 9", resourceKind)
                 return;
             }
 
+            console.log("start 10", resourceKind)
             const currentQty = production.qty ?? 0;
             const currentProgress = production.progress ?? 0;
             let nextQty = 0;
@@ -215,6 +225,7 @@ class FieldModel extends Service<FieldState> {
     }
 
     public async startProduction(resourceKind: ResourceKind) {
+        console.log("start 2", resourceKind)
         await this._startProduction(resourceKind)
     }
 

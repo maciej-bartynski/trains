@@ -196,6 +196,7 @@ class TrainModel extends Service<TrainState> {
         }
 
         for (const operation of allOperations) {
+            console.log("start prod: ", operation.resource)
             field.startProduction(operation.resource);
         }
 
