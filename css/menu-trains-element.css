@@ -49,33 +49,6 @@
     align-items: center;
 }
 
-.indicator-address {
-    width: 10px;
-    height: 10px;
-    background-color: var(--tertiary);
-    border-radius: 2px;
-    border: solid 1px black;
-    position: relative;
-}
-
-.indicator-address::after,
-.indicator-address::before {
-    content: "";
-    width: 1px;
-    height: 18px;
-    background-color: black;
-    position: absolute;
-    left: -1px;
-    top: -6px;
-}
-
-.indicator-address::before {
-    left: -6px;
-    top: -1px;
-    width: 18px;
-    height: 1px;
-}
-
 .build-train-wrapper {
     height: 100px;
     padding-left: 20px;

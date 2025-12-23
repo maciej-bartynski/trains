@@ -1,14 +1,19 @@
 import TrainAtom from "#src/atoms/TrainAtom/TrainAtom.js";
 import StatefullComponent from "#src/framework/StatefullComponent/StatefullComponent.js";
 import GameBoard from "#src/GameBoard.js";
+import FieldModel from "#src/models/FieldModel.js";
+import RouteEventModel from "#src/models/RouteEventModel.js";
 import TrainModel from "#src/models/TrainModel.js";
 import ActionsMenuOptionName from "#src/service/ActionsMenuService/types.js";
 import Address from "#src/types/Address.js";
 import BuildingKind from "#src/types/BuildingKind.js";
 import ResourceKind from "#src/types/ResourceKind.js";
 import TrainRouteEvent from "#src/types/TrainTrespassingEvent.js";
+import AddressUtils from "#src/utils/AddressUtils.js";
+import BuildingUtils from "#src/utils/BuildingUtils.js";
 import classify from "#src/utils/classify.js";
 import GameFieldElement from "../GameFieldElement/GameFieldElement.js";
+import TrainRunElement from "../TrainRun/TrainRun.js";
 
 type ElementProps = {
     trainId: string,
@@ -27,6 +32,11 @@ class MenuTrainSetRoute extends StatefullComponent<ElementState, ElementProps> {
     private playerMessage: HTMLParagraphElement = document.createElement('p');
     private goCta: HTMLButtonElement = document.createElement('button');
     private contentSection = document.createElement('section');
+    private trainNameEl = document.createElement('span');
+    private trainLocationEl = document.createElement('span');
+    private trainStateEl = document.createElement('span');
+    private locationFieldWrapperEl: HTMLDivElement = document.createElement('div');
+    private cargoList: HTMLUListElement = document.createElement('ul');
 
     connectedCallback() {
         this.innerHTML = innerHtmlText;
@@ -41,10 +51,27 @@ class MenuTrainSetRoute extends StatefullComponent<ElementState, ElementProps> {
         this.playerMessage = this.querySelector(`.${classNames.empty}`) as HTMLParagraphElement;
         this.goCta = this.querySelector(`.${classNames.routeDoneAction}`) as HTMLButtonElement;
         this.contentSection = this.querySelector(`.${classNames.content}`) as HTMLElement;
+        this.trainNameEl = this.querySelector(`.${classNames.header.name}`) as HTMLSpanElement;
+        this.locationFieldWrapperEl = this.querySelector(`.${classNames.header.previewWrapper}`) as HTMLDivElement;
+        this.trainLocationEl = this.querySelector(`.${classNames.header.location}`) as HTMLSpanElement;
+        this.trainStateEl = this.querySelector(`.${classNames.header.state}`) as HTMLSpanElement;
+        this.cargoList = this.querySelector(`.${classNames.header.cargo.list}`) as HTMLUListElement;
     }
 
     private trainListener(trainState: TrainModel['state']) {
 
+    }
+
+    static getCargoListItem(params: {
+        resourceKind: ResourceKind,
+        qty: number
+    }) {
+        return `
+            <li class="${classNames.header.cargo.listItem} list_item">
+                <img src="images/resources/${params.resourceKind}.png" class="${classNames.header.cargo.listItemImage}"/>
+                <span class="${classNames.header.cargo.listItemLabel}">${params.qty}/10</span>
+            </li>
+        `;
     }
 
     constructor() {
@@ -83,19 +110,81 @@ class MenuTrainSetRoute extends StatefullComponent<ElementState, ElementProps> {
         })
     }
 
+    renderTrainShort(props: {
+        train: TrainModel,
+        field: FieldModel,
+    }) {
+        const { train, field } = props;
+        const destinationEvent = (train.state.events ?? [])[(train.state.events ?? []).length - 1];
+        const currentEvent = train.state.events[0];
+
+        const destinationLabel = destinationEvent
+            ? `C:${destinationEvent?.state.address.column ?? '(?)'} &#10005; R:${destinationEvent?.state.address.row ?? '(?)'}`
+            : 'destination';
+
+        const eventStateToLabelMap = {
+            progress: `moving to ${destinationLabel}`,
+            before: 'starting',
+            after: 'awaiting',
+        }
+
+        const buildingName = field?.state.building
+            ? BuildingUtils.BuildingKindToDisplayName[field.state.building]
+            : null;
+
+        const locationLabel = `${buildingName ?? field?.state.terrain ?? '-'}`;
+        const locationGridLabel = `<span style="box-sizing: border-box; font-size: 8px; border: solid 1px var(--tertiary); color: var(--primary); border-radius: 4px; padding: 0 4px; line-height: 18px">C:${field?.state.address.column ?? '(?)'} &#10005; R:${field?.state.address.row ?? '(?)'}</span>`
+
+        this.style.display = 'block';
+        this.trainNameEl.innerText = train.state.name;
+        this.trainLocationEl.innerHTML = `<span class="indicator-address" style="display: inline-block"></span>${locationLabel}${locationGridLabel}`;
+        this.trainStateEl.innerHTML = currentEvent?.state.state
+            ? `<span class="indicator-blue" style="display: inline-block"></span>&nbsp;${eventStateToLabelMap[currentEvent.state.state]}`
+            : '<span class="indicator-blue" style="display: inline-block"></span>&nbsp;&nbsp;Train ready...';
+
+        if (this.locationFieldWrapperEl.getAttribute('data-address') !== AddressUtils.toKey(train.state.location)) {
+            const fieldPreview = GameFieldElement.renderPreviewDuplicate(train.state.location);
+            this.locationFieldWrapperEl.innerHTML = ''
+            this.locationFieldWrapperEl.setAttribute('data-address', AddressUtils.toKey(train.state.location));
+            if (fieldPreview) {
+                this.locationFieldWrapperEl.appendChild(fieldPreview);
+            }
+        }
+
+        const hasTrainId = this.locationFieldWrapperEl.querySelector(`${TrainRunElement.componentName}`)?.getAttribute(TrainRunElement.dataTrainAttr);
+        if (hasTrainId !== train.state.id) {
+            const nodeList = this.locationFieldWrapperEl.querySelectorAll(`${TrainRunElement.componentName}`) ?? [];
+            [...nodeList].forEach(node => node.remove());
+            const trainAnimation = TrainRunElement.createTrainElement({ trainId: train.state.id, preview: true }) as HTMLElement;
+            this.locationFieldWrapperEl.appendChild(trainAnimation);
+        }
+
+    }
+
     override render() {
         const props = this.getProps();
         const train = props?.trainId ? GameBoard.getInstance().getTrain(props.trainId) : null;
-        const trainAtom = this.querySelector(TrainAtom.elementName) as TrainAtom;
+        const currentField = train ? GameBoard.getInstance().getField(train.state.location) : null;
 
-        if (train) {
-            this.style.display = 'block';
-            trainAtom?.setAttribute('data-color', train.state.randomColor);
+        if (train && currentField) {
+            this.renderTrainShort({
+                train,
+                field: currentField,
+            })
+
+            this.cargoList.innerHTML = Object.entries(train.state.cargo ?? {}).map(cargo => {
+                const [resourceKind, qty] = cargo as [ResourceKind, number];
+                return MenuTrainSetRoute.getCargoListItem({
+                    resourceKind,
+                    qty
+                })
+            }).join();
+
             this.desinationsList.innerHTML = '';
 
             const routesToRender = train.state.events.length
                 ? [[
-                    ...train.state.events, //.map(e => e.state)
+                    ...train.state.events,
                 ], ...train.state.journey]
                 : train.state.journey;
 
@@ -152,8 +241,6 @@ class MenuTrainSetRoute extends StatefullComponent<ElementState, ElementProps> {
                                 resource: ResourceKind.Wood,
                                 type: 'pick-up'
                             }]);
-
-                            console.log('r, ', route)
                         }
                     } else {
                         loadButton?.remove();
@@ -162,8 +249,6 @@ class MenuTrainSetRoute extends StatefullComponent<ElementState, ElementProps> {
                     if (takesResources.length) {
                         unloadButton.innerText = `Unload`;
                         unloadButton.onclick = () => {
-
-                            console.log('r-, ', route)
                             destinationEvent.defineOperations([{
                                 resource: ResourceKind.Wood,
                                 type: 'dump'
@@ -202,7 +287,19 @@ class MenuTrainSetRoute extends StatefullComponent<ElementState, ElementProps> {
 
 const classNames = classify('MenuTrainSetRoute', {
     content: 'content',
-    header: 'header',
+    header: {
+        preview: 'preview',
+        previewWrapper: 'preview-wrapper',
+        name: 'name',
+        location: 'location',
+        state: 'state',
+        cargo: {
+            list: 'list',
+            listItem: 'list-item',
+            listItemImage: 'list-item-image',
+            listItemLabel: 'list-item-label'
+        }
+    },
     empty: 'empty',
     destinations: {
         destination: 'destination',
@@ -220,10 +317,38 @@ const innerHtmlText = `
     <div class="box-secondary card-primary">
         <button class="close-button box-tertiary"></button>
         <section class="${classNames.content}">
-            <header class="${classNames.header}">
-                <train-atom class="--presentation"></train-atom>
-                <h2 class="list_header">Set route by picking next destination on map</h2>
+            <header class="${classNames.header.root}">
+                <div class="${classNames.header.preview}">
+                    <div class="${classNames.header.previewWrapper}">
+                        <train-atom class="--presentation"></train-atom>
+                    </div>
+                    <span class="${classNames.header.name}">Name</span>
+                    <span class="${classNames.header.location}">
+                        <span class="indicator-address"></span>
+                    </span>
+                    <span class="${classNames.header.state}">Awaiting</span>
+                </div>
             </header>
+
+            <div class="${classNames.header.cargo.root}">
+                <div class="list_header">Cargo</div>
+                <ul class="${classNames.header.cargo.list}">
+                    <li class="${classNames.header.cargo.listItem} list_item">
+                        <img src="images/resources/wood.png" class="${classNames.header.cargo.listItemImage}"/>
+                        <span class="${classNames.header.cargo.listItemLabel}">4/10</span>
+                    </li>
+                    <li class="${classNames.header.cargo.listItem} list_item">
+                        <img src="images/resources/iron.png" class="${classNames.header.cargo.listItemImage}"/>
+                        <span class="${classNames.header.cargo.listItemLabel}">4/10</span>
+                    </li>
+                    <li class="${classNames.header.cargo.listItem} list_item">
+                        <img src="images/resources/clay.png" class="${classNames.header.cargo.listItemImage}"/>
+                        <span class="${classNames.header.cargo.listItemLabel}">4/10</span>
+                    </li>
+                </ul>
+            </div>
+
+            <h2 class="list_header">Set route by picking next destination on map</h2>
             <ul class="${classNames.destinations.root}">
                 <li class="${classNames.destinations.item}">
                     <div class="${classNames.destinations.destination} list_item">

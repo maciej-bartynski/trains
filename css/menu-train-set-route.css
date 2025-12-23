@@ -20,7 +20,6 @@ menu-train-set-route .close-button {
 .MenuTrainSetRoute_content {
     width: 100%;
     display: block;
-    margin-top: 10px;
 }
 
 .MenuTrainSetRoute_header {
@@ -30,10 +29,101 @@ menu-train-set-route .close-button {
     margin: 0;
     padding: 0;
     margin-bottom: 10px;
+    flex-direction: column;
+    width: 100%
 }
 
 .MenuTrainSetRoute_header h2 {
     margin: 0;
+}
+
+.MenuTrainSetRoute_header_preview {
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    align-content: flex-start;
+    height: 60px;
+    flex-direction: column;
+    flex-wrap: wrap;
+    width: 100%;
+}
+
+.MenuTrainSetRoute_header_preview-wrapper {
+    width: 50px;
+    height: 50px;
+    position: relative;
+    margin-right: 6px;
+}
+
+.MenuTrainSetRoute_header_name {
+    font-size: 12px;
+    font-weight: bolder;
+    line-height: 20px;
+    color: aliceblue;
+}
+
+.MenuTrainSetRoute_header_location {
+    font-size: 10px;
+    line-height: 20px;
+    color: aliceblue;
+    text-transform: capitalize;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.MenuTrainSetRoute_header_state {
+    font-size: 10px;
+    line-height: 20px;
+    color: aliceblue;
+    font-style: italic;
+    text-transform: capitalize;
+}
+
+.MenuTrainSetRoute_header_cargo {
+    width: 100%;
+}
+
+.MenuTrainSetRoute_header_cargo>.list_header {
+    margin-top: 0px;
+}
+
+.MenuTrainSetRoute_header_cargo_list {
+    width: 100%;
+    display: flex;
+    align-items: flex-start;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    height: 50px;
+    gap: 4px;
+    align-content: flex-start;
+    margin-top: 2px;
+}
+
+.MenuTrainSetRoute_header_cargo_list-item {
+    height: 20px;
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    justify-content: flex-start;
+}
+
+.MenuTrainSetRoute_header_cargo_list-item.list_item {
+    padding: 2px;
+}
+
+.MenuTrainSetRoute_header_cargo_list-item-image {
+    height: 20px;
+    width: 20px;
+    display: block;
+}
+
+.MenuTrainSetRoute_header_cargo_list-item-label {
+    color: white;
+    font-size: 10px;
 }
 
 .MenuTrainSetRoute_destinations {

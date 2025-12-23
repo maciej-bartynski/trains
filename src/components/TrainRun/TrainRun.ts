@@ -1,14 +1,14 @@
 import GameBoard from "#src/GameBoard.js";
 import TrainModel from "#src/models/TrainModel.js";
-// import actionsMenuService from "#src/service/ActionsMenuService/index.js";
 import Direction from "#src/types/Direction.js";
 import DirectionUtils from "#src/utils/DirectionUtils.js";
 import GameFieldElement from "../GameFieldElement/GameFieldElement.js";
 
 class TrainRunElement extends HTMLElement {
     static dataTrainAttr = 'data-train';
+    static dataPreviewAttr = 'data-preview';
 
-    static observedAttributes = [TrainRunElement.dataTrainAttr];
+    static observedAttributes = [TrainRunElement.dataTrainAttr, TrainRunElement.dataPreviewAttr];
 
     static componentName = 'train-run-element';
 
@@ -84,7 +84,9 @@ class TrainRunElement extends HTMLElement {
                 .find(([, hasRailway]) => hasRailway)?.[0] as Direction;
         }
 
-        field.appenTrainElement(this);
+        if (!this.getAttribute(TrainRunElement.dataPreviewAttr)) {
+            field.appenTrainElement(this);
+        }
 
         if (this.from && this.to) {
 
@@ -173,7 +175,7 @@ class TrainRunElement extends HTMLElement {
             this.trainEl.classList.remove('--moving');
         }
 
-        if (!event && this.trainEl.isConnected) {
+        if (!event && (this.trainEl.isConnected || this.getAttribute(TrainRunElement.dataPreviewAttr))) {
             this.trainEl.classList.remove('--moving');
         }
     }
@@ -219,11 +221,15 @@ class TrainRunElement extends HTMLElement {
     }
 
     static createTrainElement(params: {
-        trainId: string
+        trainId: string,
+        preview?: boolean;
     }): TrainRunElement | void {
         const train = GameBoard.getInstance().getTrain(params.trainId);
         if (train) {
             const trainAnimation = document.createElement(TrainRunElement.componentName) as TrainRunElement;
+            if (params.preview) {
+                trainAnimation.setAttribute(TrainRunElement.dataPreviewAttr, "true");
+            }
             trainAnimation.setAttribute(TrainRunElement.dataTrainAttr, params.trainId)
             return trainAnimation;
         }

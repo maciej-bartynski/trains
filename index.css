@@ -34,16 +34,6 @@ body {
     box-shadow: inset 0 0 8px 2px rgba(0, 0, 0, 1);
 }
 
-.indicator-blue {
-    filter: brightness(3);
-    background-color: var(--indicator-blue);
-    width: 10px;
-    height: 10px;
-    border: solid 1px black;
-    box-shadow: inset 0 0 5px 1px black;
-    transform: rotate(45deg);
-}
-
 button.close-button {
     border: none;
     outline: none;
@@ -92,4 +82,45 @@ button.close-button::before {
     left: 0;
     overflow: visible;
     z-index: 1000;
+}
+
+/** global elements */
+
+/*** address pseudo-icon */
+.indicator-address {
+    width: 10px;
+    height: 10px;
+    background-color: var(--tertiary);
+    border-radius: 2px;
+    border: solid 1px black;
+    position: relative;
+}
+
+.indicator-address::after,
+.indicator-address::before {
+    content: "";
+    width: 1px;
+    height: 18px;
+    background-color: black;
+    position: absolute;
+    left: -1px;
+    top: -6px;
+}
+
+.indicator-address::before {
+    left: -6px;
+    top: -1px;
+    width: 18px;
+    height: 1px;
+}
+
+/*** indicators */
+.indicator-blue {
+    filter: brightness(3);
+    background-color: var(--indicator-blue);
+    width: 10px;
+    height: 10px;
+    border: solid 1px black;
+    box-shadow: inset 0 0 5px 1px black;
+    transform: rotate(45deg);
 }

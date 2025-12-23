@@ -337,9 +337,7 @@ const innerHtml = `
             <span class="${classNames.fieldPreview.address.root}">
                 X column, Y row
             </span>
-            <span class="${classNames.fieldPreview.orientation}">
-                <span class="menu-buildings_preview-node --active"></span> to direction
-            </span>
+            <span class="${classNames.fieldPreview.orientation}"></span>
 
             <div class="${classNames.fieldPreview.actionButton}">
                 <button class="box-primary">

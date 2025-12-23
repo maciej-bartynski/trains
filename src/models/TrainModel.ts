@@ -181,6 +181,9 @@ class TrainModel extends Service<TrainState> {
                         ? nextCargo[resourceKind] - qtyAtOneDump
                         : 0;
                     await new Promise(res => setTimeout(res, loadingTime));
+                    this.setState({
+                        cargo: nextCargo
+                    })
                 }
             }
 
@@ -191,12 +194,14 @@ class TrainModel extends Service<TrainState> {
                         ? nextCargo[resourceKind] + amount
                         : amount;
                     await new Promise(res => setTimeout(res, loadingTime));
+                    this.setState({
+                        cargo: nextCargo
+                    })
                 }
             }
         }
 
         for (const operation of allOperations) {
-            console.log("start prod: ", operation.resource)
             field.startProduction(operation.resource);
         }
 
