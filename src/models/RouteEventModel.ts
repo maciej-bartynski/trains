@@ -2,6 +2,7 @@ import Service from "#src/framework/Service/Service.js";
 import ResourceKind from "#src/types/ResourceKind";
 import TrainRouteEvent from "#src/types/TrainTrespassingEvent.js";
 import TrainTrespassingLight from "#src/types/TrainTresspasingLight.js";
+import TrainModel from "./TrainModel.js";
 
 type RouteEventState = TrainRouteEvent & {
     trainId: string,
@@ -10,6 +11,7 @@ type RouteEventState = TrainRouteEvent & {
     operations?: ({
         type: 'pick-up' | 'dump',
         resource: ResourceKind,
+        maxQty: number
     }[]) | undefined
 }
 
@@ -82,8 +84,18 @@ class RouteEventModel extends Service<RouteEventState> {
     }
 
     public defineOperations(operations: RouteEventModel['state']['operations']) {
+        const maxCargoLoad = TrainModel.cargoSlots * TrainModel.maxSlotLoad;
         this.setState({
-            operations: operations!
+            operations: (operations ?? []).map(operation => {
+                if (operation.maxQty >= maxCargoLoad) {
+                    operation.maxQty = maxCargoLoad;
+                }
+
+                if (operation.maxQty <= 0) {
+                    operation.maxQty = 0;
+                }
+                return operation;
+            })
         })
     }
 

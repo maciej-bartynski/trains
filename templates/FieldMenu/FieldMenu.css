@@ -125,26 +125,46 @@ field-menu {
     padding-left: 20px;
 }
 
-.field-menu_productionSection {
+.field-menu_productionSection,
+.field-menu_terrainSection {
     display: flex;
     flex-direction: column;
-    align-items: flex-start;
-    gap: 6px;
+    align-items: stretch;
 }
 
-.field-menu_productionSection_terrain {
+.field-menu_storageSection>.list_header,
+.field-menu_terrainSection>.list_header,
+.field-menu_productionSection>.list_header {
+    margin-top: 0;
+}
+
+.field-menu_terrainSection_terrain {
     font-size: 10px;
     color: white;
 }
 
-.field-menu_productionSection_resource {
+.field-menu_terrainSection_resource {
     font-size: 10px;
     color: white;
+    margin-top: 6px;
+    margin-bottom: 6px;
 }
 
 .field-menu_productionSection_production {
     font-size: 10px;
     color: white;
+}
+
+.field-menu_productionSection_production>img {
+    height: 20px;
+    margin: 4px;
+    margin-right: auto;
+}
+
+.field-menu_productionSection_production.list_item {
+    padding: 0;
+    padding-right: 6px;
+    width: 100%;
 }
 
 .field-menu_storageSection {
@@ -155,10 +175,7 @@ field-menu {
     gap: 2px;
 }
 
-.field-menu_storageSection_head {
-    font-size: 10px;
-    color: white;
-}
+.field-menu_storageSection_head {}
 
 .field-menu_storageSection_row {
     display: flex;
@@ -170,4 +187,8 @@ field-menu {
 .field-menu_storageSection_rowItem {
     font-size: 10px;
     color: white;
+}
+
+.field-menu_storageSection_rowItem>img {
+    width: 20px;
 }

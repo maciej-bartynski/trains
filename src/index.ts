@@ -13,6 +13,7 @@ import BuildingButtonElement from '#src/components/MenuBottomElement/BuildingBut
 import BaseComponent from './framework/BaseComponent/BaseComponent.js';
 import TrafficLight from './atoms/TrafficLight/TrafficLight.js';
 import FieldMenuElement from './components/FieldMenuElement/FieldMenuElement.js'
+import RouteItem from './components/MenuTrainSetRoute/RouteItem.js';
 
 document.addEventListener('DOMContentLoaded', async (): Promise<void> => {
     GameBoard.getInstance();
@@ -29,5 +30,6 @@ document.addEventListener('DOMContentLoaded', async (): Promise<void> => {
     customElements.define(TrainAtom.elementName, TrainAtom);
     customElements.define(TrafficLight.elementName, TrafficLight);
     customElements.define(FieldMenuElement.componentName, FieldMenuElement);
+    customElements.define(RouteItem.componentName, RouteItem);
     BaseComponent.resolve?.(true)
 });

@@ -159,7 +159,7 @@ class GameFieldElement extends HTMLElement {
                         if (!payload) {
                             return;
                         }
-                        field.buildProductionBuilding();
+                        field.buildTimber();
                         break;
                     }
                 }

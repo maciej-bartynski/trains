@@ -61,7 +61,7 @@ class FieldModel extends Service<FieldState> {
         this.unregisterEvent = this.unregisterEvent.bind(this);
 
         this.canBuildProductionBuilding = this.canBuildProductionBuilding.bind(this);
-        this.buildProductionBuilding = this.buildProductionBuilding.bind(this);
+        this.buildTimber = this.buildTimber.bind(this);
         this._startProduction = this._startProduction.bind(this);
         this.startProduction = this.startProduction.bind(this);
         this._pauseProduction = this._pauseProduction.bind(this);
@@ -429,7 +429,7 @@ class FieldModel extends Service<FieldState> {
         return false;
     }
 
-    public async buildProductionBuilding() {
+    public async buildTimber() {
         if (this.canBuildProductionBuilding(BuildingKind.Timber)) {
             const durationSeconds = 0.5 //1 * Object.entries(orientation).filter(([_, value]) => value).length;
             await this._startConstruction({ durationSeconds, kind: BuildingKind.Timber });
@@ -440,9 +440,19 @@ class FieldModel extends Service<FieldState> {
                         progress: 0,
                         qty: 0,
                     },
+                    [ResourceKind.Coal]: {
+                        progress: 0,
+                        qty: 0,
+                    },
+                    [ResourceKind.Clay]: {
+                        progress: 0,
+                        qty: 0,
+                    },
                 }
             });
             this._startProduction(ResourceKind.Wood);
+            this._startProduction(ResourceKind.Coal);
+            this._startProduction(ResourceKind.Clay);
         }
     }
 
@@ -529,6 +539,10 @@ class FieldModel extends Service<FieldState> {
             await this._startConstruction({ durationSeconds, kind: BuildingKind.RailwayStation });
             this.setState({
                 building: BuildingKind.RailwayStation,
+                storage: Object.values(ResourceKind).reduce((result, item) => {
+                    result[item] = 0;
+                    return result;
+                }, {} as Record<ResourceKind, number>)
             })
         }
     }

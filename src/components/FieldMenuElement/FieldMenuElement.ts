@@ -72,6 +72,7 @@ class FieldMenuElement extends StatefullComponent<TState, TProps> {
     private closeButton: HTMLButtonElement = document.createElement('button');
     private trainsSectionEl: HTMLDivElement = document.createElement('div');
     private productionSectionEl: HTMLDivElement = document.createElement('div');
+    private terrainSectionEl: HTMLDivElement = document.createElement('div');
     private productionSectionTerrainEl: HTMLSpanElement = document.createElement('span');
     private productionSectionResourceEl: HTMLSpanElement = document.createElement('span');
     private productionSectionProductionEl: HTMLSpanElement = document.createElement('span');
@@ -226,23 +227,31 @@ class FieldMenuElement extends StatefullComponent<TState, TProps> {
                 })
             }
 
-            this.productionSectionEl.innerHTML = '';
+            this.terrainSectionEl.innerHTML = '';
             this.productionSectionTerrainEl.innerHTML = `Terrain: <b>${field.state.terrain}</b>`;
             this.productionSectionResourceEl.innerHTML = `Resource: <b>${field.state.resources.map((resource) => resource).join(', ')}</b>`;
-            this.productionSectionEl.appendChild(this.productionSectionTerrainEl);
-            this.productionSectionEl.appendChild(this.productionSectionResourceEl);
+            this.terrainSectionEl.appendChild(this.productionSectionTerrainEl);
+            this.terrainSectionEl.appendChild(this.productionSectionResourceEl);
+
+            this.productionSectionEl.innerHTML = '';
             if (field.state.production) {
+                const productionHeader = document.createElement('span');
+                productionHeader.classList.add('list_header');
+                productionHeader.innerText = 'Production'
+                this.productionSectionEl.appendChild(productionHeader);
+
                 Object.entries(field.state.production).forEach(production => {
                     const [key, productionState] = production;
                     if (productionState) {
                         const resourceKind = key as ResourceKind;
                         const { qty, progress } = productionState;
                         const productionRow = this.productionSectionProductionEl.cloneNode(true) as HTMLSpanElement;
-                        productionRow.innerHTML = `Production: ${resourceKind} <b>${qty}/10</b> <i>${progress}%</i>`;
+                        productionRow.innerHTML = `<img src="images/resources/${resourceKind}.png"/> <span><b>${qty}</b>/10</span> <i>${progress}%</i>`;
                         this.productionSectionEl.appendChild(productionRow);
                     }
                 })
             }
+
             this.storageSectionRowEl.innerHTML = '';
             this.storageSection.style.display = 'none'
 
@@ -252,7 +261,9 @@ class FieldMenuElement extends StatefullComponent<TState, TProps> {
                 Object.entries(field.state.storage).forEach(entry => {
                     const [resource, storageQty] = entry;
                     storageRowInnerHtml += `
-                        <span class="${classNames.storageSection.rowItem}">${resource}: <b>${storageQty}</b></span>
+                        <span class="${classNames.storageSection.rowItem} list_item">
+                            <img src="images/resources/${resource}.png" /><b>${storageQty}</b>
+                        </span>
                     `;
                 });
                 this.storageSectionRowEl.innerHTML = storageRowInnerHtml;
@@ -278,9 +289,10 @@ class FieldMenuElement extends StatefullComponent<TState, TProps> {
         this.closeButton = this.querySelector('.close-button') as HTMLButtonElement;
         this.closeButton.onclick = this.onCloseMenu;
         this.trainsSectionEl = this.querySelector(`.${classNames.trainsSection.root}`) as HTMLDivElement;
+        this.terrainSectionEl = this.querySelector(`.${classNames.terrainSection.root}`) as HTMLDivElement;
         this.productionSectionEl = this.querySelector(`.${classNames.productionSection.root}`) as HTMLDivElement;
-        this.productionSectionTerrainEl = this.querySelector(`.${classNames.productionSection.terrain}`) as HTMLSpanElement;
-        this.productionSectionResourceEl = this.querySelector(`.${classNames.productionSection.resource}`) as HTMLSpanElement;
+        this.productionSectionTerrainEl = this.querySelector(`.${classNames.terrainSection.terrain}`) as HTMLSpanElement;
+        this.productionSectionResourceEl = this.querySelector(`.${classNames.terrainSection.resource}`) as HTMLSpanElement;
         this.productionSectionProductionEl = this.querySelector(`.${classNames.productionSection.production}`) as HTMLSpanElement;
         this.storageSectionRowEl = this.querySelector(`.${classNames.storageSection.row}`) as HTMLDivElement;
         this.storageSection = this.querySelector(`.${classNames.storageSection.root}`) as HTMLDivElement;
@@ -299,9 +311,12 @@ const classNames = classify(FieldMenuElement.componentName, {
         orientation: 'orientation',
         actionButton: 'action-button'
     },
-    productionSection: {
+    terrainSection: {
         terrain: 'terrain',
         resource: 'resource',
+    },
+    productionSection: {
+        header: 'header',
         production: 'production'
     },
     storageSection: {
@@ -347,14 +362,18 @@ const innerHtml = `
             </div>
         </div>
 
+        <div class="${classNames.terrainSection.root}">
+            <span class="${classNames.terrainSection.terrain}">Terrain: <b>Forrest</b></span>
+            <span class="${classNames.terrainSection.resource}">Resource: <b>Wood</b></span>
+        </div>
+
         <div class="${classNames.productionSection.root}">
-            <span class="${classNames.productionSection.terrain}">Terrain: <b>Forrest</b></span>
-            <span class="${classNames.productionSection.resource}">Resource: <b>Wood</b></span>
-            <span class="${classNames.productionSection.production}">Production: <b>3/10</b> (<i>55%</i>)</span>
+            <span class="${classNames.storageSection.head} list_header">Production</span>
+            <span class="list_item ${classNames.productionSection.production}">Item <b>3</b>/10 (<i>55%</i>)</span>
         </div>
 
         <div class="${classNames.storageSection.root}">
-            <span class="${classNames.storageSection.head}"><b>Storage</b></span>
+            <span class="${classNames.storageSection.head} list_header">Storage</span>
             <div class="${classNames.storageSection.row}">
                 <span class="${classNames.storageSection.rowItem}">Wood: <b>3/10</b></span>
                 <span class="${classNames.storageSection.rowItem}">Clay: <b>2/10</b></span>

@@ -11,6 +11,8 @@ menu-train-set-route {
     max-height: 75vh;
     overflow: auto;
     z-index: 10;
+    min-width: 316px;
+    padding-right: 16px;
 }
 
 menu-train-set-route .close-button {
@@ -97,7 +99,6 @@ menu-train-set-route .close-button {
     list-style: none;
     margin: 0;
     padding: 0;
-    height: 50px;
     gap: 4px;
     align-content: flex-start;
     margin-top: 2px;
@@ -134,7 +135,6 @@ menu-train-set-route .close-button {
     display: flex;
     flex-direction: column;
     align-items: stretch;
-    gap: 2px;
 }
 
 .MenuTrainSetRoute_destinations_item {
@@ -142,9 +142,9 @@ menu-train-set-route .close-button {
     padding: 0;
     margin: 0;
     display: flex;
-    gap: 2px;
     align-items: stretch;
     flex-direction: column;
+    border-radius: 4px;
 }
 
 .MenuTrainSetRoute_destinations_destination {
@@ -159,25 +159,131 @@ menu-train-set-route .close-button {
     height: 50px;
 }
 
-.MenuTrainSetRoute_destinations_address {
-    font-size: 12px;
-    line-height: 24px;
-    color: white;
+.MenuTrainSetRoute_destinations_field-data {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: space-between;
 }
 
-.MenuTrainSetRoute_destinations_distance {
-    font-size: 12px;
-    line-height: 24px;
-    color: white;
+.MenuTrainSetRoute_destinations_address {
+    font-size: 10px;
+    line-height: 16px;
+    color: var(--tertiary);
+}
+
+.MenuTrainSetRoute_location-grid-label {
+    font-size: 8px;
+    border: solid 1px var(--tertiary);
+    border-radius: 4px;
+    padding: 0 4px;
+    line-height: 18px;
+    color: var(--primary)
+}
+
+.MenuTrainSetRoute_location-grid-label.--dark {
+    color: var(--tertiary);
+}
+
+.MenuTrainSetRoute_distance,
+.MenuTrainSetRoute_loadCargo,
+.MenuTrainSetRoute_standingBy {
+    font-size: 10px;
+    line-height: 16px;
+    color: var(--tertiary);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 6px;
+    padding-left: 10px;
+    position: relative;
+}
+
+.MenuTrainSetRoute_loadCargo.list_item {
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+}
+
+.MenuTrainSetRoute_distance_arrival-indicator-wrapper {
+    display: flex;
+    justify-content: center;
+    padding: 6px;
+}
+
+.MenuTrainSetRoute_distance_label,
+.MenuTrainSetRoute_standingBy_label,
+.MenuTrainSetRoute_loadCargo_label {
+    font-size: 8px;
+    letter-spacing: 0.4px;
+    line-height: 16px;
+    color: var(--tertiary);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 6px;
+    text-transform: uppercase;
+}
+
+.MenuTrainSetRoute_standingBy {
+    display: flex;
+    justify-content: center;
+}
+
+.MenuTrainSetRoute_standingBy_label {}
+
+.MenuTrainSetRoute_distance_content {
+    font-size: 10px;
+    line-height: 16px;
+    color: var(--tertiary);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 6px;
+    border: solid 1px var(--tertiary);
+    padding: 2px 6px 2px 8px;
+    border-radius: 4px;
+}
+
+.MenuTrainSetRoute_distance_data {
+    font-size: 10px;
+    line-height: 16px;
+    color: var(--tertiary);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 6px;
+}
+
+.MenuTrainSetRoute_loadCargo_list {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    align-self: stretch;
+}
+
+.MenuTrainSetRoute_loadCargo_list-item {
+    align-self: stretch;
+    display: flex;
+}
+
+.MenuTrainSetRoute_loadCargo_list-item-actions {
+    display: flex;
+    gap: 2px;
+    flex: auto;
+    justify-content: flex-end;
+}
+
+.MenuTrainSetRoute_destinations_header.list_header {
+    margin: 0;
+    margin-top: 10px;
 }
 
 .MenuTrainSetRoute_destinations_act {
     margin-left: auto;
 }
 
-.MenuTrainSetRoute_destinations_operations {
-    display: none;
-}
+.MenuTrainSetRoute_destinations_operations {}
 
 .MenuTrainSetRoute_empty {
     font-size: 12px;

@@ -12,12 +12,14 @@ interface TrainState {
     location: Address; // if equall to route[0].address, it's departuring.
     direction: Direction | null; // if null, it's Awaiting on node center. If route[0].from is null, it's departuring.
     journey: Array<RouteEventModel[]>;
+    originalJurney: Array<RouteEventModel[]>;
     routeCurrentEvent: number;
     events: RouteEventModel[];
     destination: Address | null;
     randomColor: string;
     trespassingProgress: number;
-    cargo?: Partial<Record<ResourceKind, number>>
+    cargo?: Partial<Record<ResourceKind, number>>;
+    operationState?: 'departure' | 'arrival' | 'trespassing' | 'dump' | 'pick-up' | 'awaiting' | 'ready'
 }
 
 const colors = [
@@ -44,9 +46,14 @@ const colors = [
 class TrainModel extends Service<TrainState> {
     state: TrainState;
 
+    static cargoSlots = 4;
+
+    static maxSlotLoad = 10;
+
     private constructor(params: TrainState) {
         super();
         this.state = params;
+        this.state.originalJurney = params.originalJurney ?? [];
         this.state.events = params.events.map(event => {
             if (event instanceof RouteEventModel) {
                 return event;
@@ -104,6 +111,11 @@ class TrainModel extends Service<TrainState> {
         }
 
         if (currentEvent.state.light !== TrainTrespassingLight.Green) {
+            if (this.state.operationState !== 'awaiting') {
+                this.setState({
+                    operationState: 'awaiting'
+                })
+            }
             /** wait */
             return;
         }
@@ -111,6 +123,19 @@ class TrainModel extends Service<TrainState> {
         /**
          * Clearing previous event:
         */
+        let operationState: TrainState['operationState'] = 'trespassing';
+        if (!currentEvent.state.from) {
+            operationState = 'departure'
+        }
+
+        if (!currentEvent.state.to) {
+            operationState = 'arrival'
+        }
+
+        if (!currentEvent.state.to && !currentEvent.state.from) {
+            operationState = 'ready'
+        }
+
         this.setState({
             events: events.filter((ev, idx) => {
                 const isPastEvent = ev.state.order < index;
@@ -119,13 +144,11 @@ class TrainModel extends Service<TrainState> {
                     return false;
                 }
                 return true;
-            })
-        })
-
-        this.setState({
+            }),
             direction: currentEvent.state.from,
-            location: currentEvent.state.address
-        });
+            location: currentEvent.state.address,
+            operationState,
+        })
 
         if (this.trespassingInterval === null) {
 
@@ -173,6 +196,10 @@ class TrainModel extends Service<TrainState> {
             const resourceKind = operation.resource;
             const operationType = operation.type;
 
+            this.setState({
+                operationState: operationType
+            })
+
             if (operationType === 'dump') {
                 while (this.state.cargo?.[resourceKind] ?? 0) {
                     const qtyAtOneDump = 1;
@@ -188,15 +215,45 @@ class TrainModel extends Service<TrainState> {
             }
 
             if (operationType === 'pick-up') {
-                while (field.state.production?.[resourceKind]?.qty ?? 0) {
-                    const [, amount] = field.pickUpResource(operation.resource);
-                    nextCargo[resourceKind] = nextCargo[resourceKind]
-                        ? nextCargo[resourceKind] + amount
-                        : amount;
-                    await new Promise(res => setTimeout(res, loadingTime));
-                    this.setState({
-                        cargo: nextCargo
-                    })
+
+                let loadedAmount = 0;
+
+                while (
+                    (field.state.production?.[resourceKind]?.qty ?? 0) &&
+                    (loadedAmount < operation.maxQty)
+                ) {
+                    const perResourceUsedSlotsMap: Partial<Record<ResourceKind, boolean>> = {};
+                    let totalUsedSlotsAmount = 0;
+
+                    Object.entries(this.state.cargo ?? {}).forEach(entry => {
+                        const [resourceKind, qty] = entry as [ResourceKind, number];
+                        const slotsUsedByResource = Math.ceil(qty / TrainModel.maxSlotLoad);
+                        const lastSlotUsedByResourceHasRoom = Math.ceil(qty / TrainModel.maxSlotLoad) > (qty / TrainModel.maxSlotLoad);
+                        perResourceUsedSlotsMap[resourceKind] = lastSlotUsedByResourceHasRoom;
+                        totalUsedSlotsAmount += slotsUsedByResource;
+                    });
+
+                    const canLoad = (totalUsedSlotsAmount < TrainModel.cargoSlots) || (perResourceUsedSlotsMap[resourceKind]);
+
+                    if (canLoad) {
+                        const [, amount] = field.pickUpResource(operation.resource);
+
+                        loadedAmount += 1;
+
+                        nextCargo[resourceKind] = nextCargo[resourceKind]
+                            ? nextCargo[resourceKind] + amount
+                            : amount;
+
+                        await new Promise(res => setTimeout(res, loadingTime));
+                        this.setState({
+                            cargo: nextCargo
+                        })
+                    } else {
+                        break;
+                    }
+
+
+
                 }
             }
         }
@@ -214,9 +271,9 @@ class TrainModel extends Service<TrainState> {
         route: RouteEventModel[]
     }) {
         this.setState({
-            journey: [
-                ...this.state.journey,
-                params.route
+            originalJurney: [
+                ...this.state.originalJurney,
+                params.route,
             ]
         })
     }
@@ -226,6 +283,7 @@ class TrainModel extends Service<TrainState> {
     }) {
         const journeyWithoutFirstRoute = [...params.journey];
         const firstRoute = journeyWithoutFirstRoute.shift();
+
         if (firstRoute && !this.state.events.length) {
             const destination = firstRoute[firstRoute.length - 1]?.state.address;
             if (!destination) {
@@ -246,6 +304,7 @@ class TrainModel extends Service<TrainState> {
                     journey: journeyWithoutFirstRoute,
                     routeCurrentEvent: 0,
                     destination,
+                    originalJurney: params.journey
                 })
 
                 setTimeout(() => {
@@ -263,10 +322,14 @@ class TrainModel extends Service<TrainState> {
         } else {
             this.state.events.forEach(ev => ev.clearSelf())
             this.setState({
-                events: []
+                events: [],
+                operationState: 'ready',
+                originalJurney: this.state.journey.length
+                    ? this.state.originalJurney
+                    : []
             })
             this.setJourney({
-                journey: this.state.journey
+                journey: this.state.journey,
             })
         }
     }
@@ -287,11 +350,13 @@ class TrainModel extends Service<TrainState> {
             events: [],
             routeCurrentEvent: 0,
             journey: [],
+            originalJurney: [],
             direction: null,
             destination: null,
             randomColor,
             trespassingProgress: 0,
-            cargo: {}
+            cargo: {},
+            operationState: 'ready'
         });
 
         return newModel;

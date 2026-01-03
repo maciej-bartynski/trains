@@ -54,7 +54,8 @@ class OperationIndicatorElement extends HTMLElement {
             if (!currentTrain || !currentField) {
                 return;
             }
-            const lastRoute = currentTrain.state.journey[currentTrain.state.journey.length - 1] ?? null;
+            // const lastRoute = currentTrain.state.journey[currentTrain.state.journey.length - 1] ?? null;
+            const lastRoute = currentTrain.state.originalJurney[currentTrain.state.originalJurney.length - 1] ?? null;
             const lastDesination = lastRoute
                 ? lastRoute[lastRoute.length - 1]
                 : null;
@@ -73,7 +74,6 @@ class OperationIndicatorElement extends HTMLElement {
                 trainId: currentTrain.state.id,
                 order: idx,
                 state: 'before',
-
             }))
             GameBoard.ServicesRegistry.actionsMenu.onTrainSetRoute({
                 trainId: currentTrain.state.id,
