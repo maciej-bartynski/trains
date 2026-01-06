@@ -1,9 +1,7 @@
-type TState = {
-    [k: (string | number)]: (string | number | boolean | undefined | null | TState)
-}
+import BoardModel from "../models/BoardModel.js";
 
-class State<T extends TState> {
-    private _state: Partial<T> = {}
+class State<T extends Object> {
+    private _state: T = {} as T;
 
     get state() {
         return this._state;
@@ -15,14 +13,19 @@ class State<T extends TState> {
         this.listeners.forEach(l => l());
     }
 
-    constructor(params?: {
-        initialState?: Partial<T>,
+    constructor(params: {
+        initialState: T,
         initialListeners?: (() => void)[],
         initialNotify?: boolean;
     }) {
-        if (params?.initialState) {
-            this._state = params.initialState
-        }
+
+        this.willChange = this.willChange.bind(this);
+        this.subscribe = this.subscribe.bind(this);
+        this.unsubscribe = this.unsubscribe.bind(this);
+        this.notifyListeners = this.notifyListeners.bind(this);
+        this.setState = this.setState.bind(this);
+
+        this._state = params.initialState;
 
         if (params?.initialListeners) {
             this.listeners = params.initialListeners
@@ -33,7 +36,7 @@ class State<T extends TState> {
         }
     }
 
-    public willChange(newState: undefined | Partial<T>): boolean {
+    public willChange(newState: Partial<T>): boolean {
         const oldStateToken = JSON.stringify(this.state).split('').sort();
         const newStateToken = JSON.stringify(newState).split('').sort();
         if (oldStateToken === newStateToken) return false;
@@ -42,16 +45,19 @@ class State<T extends TState> {
 
     public setState(newState: Partial<T>) {
         if (this.willChange(newState)) {
+            this._state = {
+                ...this._state,
+                ...newState,
+            }
             this.notifyListeners();
         }
     }
 
     public subscribe(listener: () => void) {
         if (!this.listeners.includes(listener)) {
-            this.listeners.push(listener)
+            this.listeners.push(listener);
+            listener();
         }
-
-        listener();
     }
 
     public unsubscribe(listener: () => void) {
