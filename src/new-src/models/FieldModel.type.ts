@@ -6,6 +6,7 @@ import Orientation, { OrientationSquareVariant } from "../enums/Orientation.js";
 import BuildingKind from "../enums/BuildingKind.js";
 
 type utilFieldStateOnInit = {
+    _id: string,
     address: Address,
     visibility: FieldVisibility.Ready | FieldVisibility.Hidden,
     terrain: null,
@@ -20,6 +21,7 @@ type utilFieldStateOnInit = {
 };
 
 type utilFieldStateExisting = {
+    _id: string,
     address: Address,
     visibility: FieldVisibility.Visible,
     terrain: TerrainKind,
@@ -37,6 +39,7 @@ type utilFieldStateExisting = {
 };
 
 type FieldState = {
+    _id: string,
     address: Address,
     visibility: FieldVisibility,
     terrain: TerrainKind | null,

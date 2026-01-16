@@ -1,10 +1,10 @@
 import State from "../framework/State.js"
-import { EventsState } from "./EventsModel.type";
+import { EventState } from "./EventsModel.type";
 
-class EventsModel extends State<EventsState> {
-    constructor(data: EventsState) {
-        super({ initialState: data });
+class EventModel extends State<EventState> {
+    constructor(data: EventState) {
+        super({ initialState: data, store: 'events' });
     }
 }
 
-export default EventsModel
+export default EventModel

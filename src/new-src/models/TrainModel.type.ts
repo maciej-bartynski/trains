@@ -1,7 +1,7 @@
 import Address from "../types/Address.js";
 
 type TrainState = {
-    id: string,
+    _id: string,
     location: Address,
 };
 

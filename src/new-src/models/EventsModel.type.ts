@@ -1,9 +1,10 @@
 import Address from "../types/Address.js";
 
-type EventsState = {
+type EventState = {
+    _id: string;
     address: Address
 };
 
 export type {
-    EventsState
+    EventState
 }

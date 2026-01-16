@@ -1,68 +1,83 @@
-import BoardModel from "../models/BoardModel.js";
+import DB, { StoreName } from "./DbService.js";
 
-class State<T extends Object> {
+abstract class State<T extends Object & { _id: string }> {
     private _state: T = {} as T;
 
     get state() {
         return this._state;
     }
 
-    private listeners: (() => void)[] = [];
+    private _listeners: ((state: T) => void)[] = [];
 
-    private notifyListeners() {
-        this.listeners.forEach(l => l());
+    private async _notifyListeners() {
+        this._listeners.forEach(l => l(this.state));
     }
 
+    private _storeName: StoreName;
+
     constructor(params: {
-        initialState: T,
+        store: StoreName;
+        initialState: T & { _id: string },
         initialListeners?: (() => void)[],
         initialNotify?: boolean;
     }) {
-
         this.willChange = this.willChange.bind(this);
         this.subscribe = this.subscribe.bind(this);
         this.unsubscribe = this.unsubscribe.bind(this);
-        this.notifyListeners = this.notifyListeners.bind(this);
         this.setState = this.setState.bind(this);
+        this._notifyListeners = this._notifyListeners.bind(this);
 
+        this._storeName = params.store;
         this._state = params.initialState;
 
         if (params?.initialListeners) {
-            this.listeners = params.initialListeners
+            this._listeners = params.initialListeners
         }
 
         if (params?.initialNotify) {
-            this.notifyListeners();
+            this._notifyListeners();
         }
+
+        DB.I().set(this._storeName, params.initialState);
     }
 
     public willChange(newState: Partial<T>): boolean {
-        const oldStateToken = JSON.stringify(this.state).split('').sort();
-        const newStateToken = JSON.stringify(newState).split('').sort();
-        if (oldStateToken === newStateToken) return false;
+        const oldState = this.state;
+        const nextState = {
+            ...oldState,
+            ...newState,
+        }
+
+        const oldStateToken = JSON.stringify(oldState).split('').sort();
+        const newStateToken = JSON.stringify(nextState).split('').sort();
+        if (oldStateToken === newStateToken) {
+            return false;
+        }
         return true;
     }
 
     public setState(newState: Partial<T>) {
         if (this.willChange(newState)) {
-            this._state = {
-                ...this._state,
+            const nextState = {
+                ...this.state,
                 ...newState,
             }
-            this.notifyListeners();
+            this._state = nextState;
+            this._notifyListeners();
+            DB.I().set(this._storeName, nextState);
         }
     }
 
-    public subscribe(listener: () => void) {
-        if (!this.listeners.includes(listener)) {
-            this.listeners.push(listener);
-            listener();
+    public subscribe(listener: (state: T) => void) {
+        if (!this._listeners.includes(listener)) {
+            this._listeners.push(listener);
+            listener(this.state);
         }
     }
 
     public unsubscribe(listener: () => void) {
-        if (!this.listeners.includes(listener)) {
-            this.listeners = this.listeners.filter(l => l !== listener)
+        if (!this._listeners.includes(listener)) {
+            this._listeners = this._listeners.filter(l => l !== listener)
         }
     }
 }

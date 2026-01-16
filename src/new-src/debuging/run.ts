@@ -1,4 +1,8 @@
+import FieldElement from "../elements/FieldElement.js";
+import DB from "../framework/DbService.js";
 import GameInstance from "../index.js";
+import PieceEnum from "../models/BoardModel.type.js";
+import AddressUtils from "../utils/AddressUtils.js";
 import { FBlock, FCloseLine, FLine, FOpenLine, Formatter, FSpace, FText, FToggle } from './Debg.js';
 
 customElements.define('f-formatter', Formatter);
@@ -10,16 +14,65 @@ customElements.define('f-space', FSpace);
 customElements.define('f-toggle', FToggle);
 customElements.define('f-text', FText);
 
-document.addEventListener('DOMContentLoaded', () => {
-    GameInstance.subscribePiece('fields', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+
+    await GameInstance.configured;
+
+    const container = document.createElement('div') as HTMLDivElement;
+    container.style.border = 'solid 1px black';
+    container.style.position = 'relative';
+
+    const resetGameBtn = document.createElement('button');
+    resetGameBtn.innerText = 'Again';
+    resetGameBtn.onclick = async () => {
+        GameInstance.unsubscribePiece(gameSub, { type: PieceEnum.Fields })
+        await DB.I().drop();
+        await GameInstance.configure();
+        GameInstance.subscribePiece(gameSub, { type: PieceEnum.Fields })
+    }
+
+    document.body.appendChild(resetGameBtn);
+    document.body.appendChild(container);
+
+    const gameSub = () => {
         const fields = GameInstance.state.fields;
-        const toObject: Record<string, object> = {}
+        const _fieldElements = document.querySelectorAll(`${FieldElement.tagName}[data-field]`) as NodeListOf<FieldElement>;
+        let fieldElements = [..._fieldElements];
+
         fields.forEach((fieldModel, addressKey) => {
-            toObject[addressKey] = fieldModel.state;
+            let foundId;
+            let fieldElement = fieldElements.find((el, id) => {
+                if (AddressUtils.isAddressEqual(el.props.address, fieldModel.state.address)) {
+                    foundId = id;
+                    return true;
+                }
+                return false;
+            });
+
+            if (typeof foundId === 'number') {
+                fieldElements = [
+                    ...fieldElements.slice(0, foundId),
+                    ...fieldElements.slice(foundId + 1)
+                ]
+            }
+
+            if (!fieldElement) {
+                fieldElement = document.createElement(FieldElement.tagName) as FieldElement;
+                fieldElement.setAttribute('data-field', fieldModel.state._id);
+                fieldElement.props = fieldModel.state;
+            }
+
+            fieldElement.setProps(fieldModel.state); // ?
+
+            if (!fieldElement.isConnected) {
+                container.appendChild(fieldElement)
+            }
         });
-        const formatter = document.createElement('f-formatter');
-        formatter.innerHTML = JSON.stringify(toObject);
-        document.body.innerHTML = '';
-        document.body.appendChild(formatter);
-    })
+
+        fieldElements.forEach(el => {
+            el.remove()
+        })
+    }
+
+    GameInstance.subscribePiece(gameSub, { type: PieceEnum.Fields })
 });

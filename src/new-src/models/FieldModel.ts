@@ -6,11 +6,13 @@ import Orientation, { OrientationSquareVariant } from "../enums/Orientation.js";
 import TerrainUtils from "../utils/TerrainUtils.js";
 import { FieldState, utilFieldStateOnInit } from "./FieldModel.type.js";
 import BoardModel from "./BoardModel.js";
+import AddressUtils from "../utils/AddressUtils.js";
 
 class FieldModel extends State<FieldState> {
     static game: BoardModel;
 
     constructor(data: Address | FieldState) {
+
         if (!FieldModel.game) {
             throw new Error('FieldModel: game is not initialized yet.')
         }
@@ -20,11 +22,14 @@ class FieldModel extends State<FieldState> {
 
         if (isFieldState) {
             super({
-                initialState: data
+                initialState: data,
+                store: 'fields'
             })
         } else if (isAddress) {
             super({
+                store: 'fields',
                 initialState: {
+                    _id: AddressUtils.toKey(data),
                     address: data,
                     visibility: FieldVisibility.Ready,
                     terrain: null,
@@ -84,7 +89,7 @@ const isFieldStateData = (data: Address | FieldState): data is utilFieldStateOnI
 }
 
 const isAddressData = (data: Address | FieldState): data is Address => {
-    if ((data as any)?.column && (data as any)?.row) {
+    if (typeof (data as any)?.column === 'number' && typeof (data as any)?.row === 'number') {
         return true
     }
     return false;
