@@ -1,4 +1,6 @@
-type StoreName = keyof typeof DBService.STORES
+import PieceEnum from "../models/BoardModel.type.js";
+
+// type StoreName = keyof typeof DBService.STORES
 
 class DBService {
 
@@ -6,12 +8,12 @@ class DBService {
 
     static VERSION = 1;
 
-    static STORES = {
-        fields: 'fields' as 'fields',
-        trains: 'trains' as 'trains',
-        buildings: 'buildings' as 'buildings',
-        events: 'events' as 'events',
-    }
+    // static STORES: = {
+    //     fields: 'fields' as 'fields',
+    //     trains: 'trains' as 'trains',
+    //     buildings: 'buildings' as 'buildings',
+    //     events: 'events' as 'events',
+    // }
 
     public async createDb(): Promise<void> {
         const dbPromise: Promise<IDBDatabase> = new Promise((resolve, reject) => {
@@ -36,17 +38,20 @@ class DBService {
 
                 const db = (event.target as IDBOpenDBRequest).result;
 
-                if (!db.objectStoreNames.contains(DBService.STORES.fields)) {
-                    db.createObjectStore(DBService.STORES.fields);
+                if (!db.objectStoreNames.contains(PieceEnum.Fields)) {
+                    db.createObjectStore(PieceEnum.Fields);
                 }
-                if (!db.objectStoreNames.contains(DBService.STORES.trains)) {
-                    db.createObjectStore(DBService.STORES.trains);
+                if (!db.objectStoreNames.contains(PieceEnum.Trains)) {
+                    db.createObjectStore(PieceEnum.Trains);
                 }
-                if (!db.objectStoreNames.contains(DBService.STORES.buildings)) {
-                    db.createObjectStore(DBService.STORES.buildings);
+                if (!db.objectStoreNames.contains(PieceEnum.Buildings)) {
+                    db.createObjectStore(PieceEnum.Buildings);
                 }
-                if (!db.objectStoreNames.contains(DBService.STORES.events)) {
-                    db.createObjectStore(DBService.STORES.events);
+                if (!db.objectStoreNames.contains(PieceEnum.Events)) {
+                    db.createObjectStore(PieceEnum.Events);
+                }
+                if (!db.objectStoreNames.contains(PieceEnum.Tracks)) {
+                    db.createObjectStore(PieceEnum.Tracks);
                 }
             };
         });
@@ -97,7 +102,7 @@ class DBService {
         return DBService._instance;
     }
 
-    public async get<T>(storeName: StoreName, key: string): Promise<T | null> {
+    public async get<T>(storeName: PieceEnum, key: string): Promise<T | null> {
         return new Promise(async (res, rej) => {
             const request = (await this.db)
                 .transaction([storeName], 'readonly')
@@ -114,7 +119,7 @@ class DBService {
         });
     }
 
-    public async set(storeName: StoreName, value: object & { _id: string }): Promise<void> {
+    public async set(storeName: PieceEnum, value: object & { _id: string }): Promise<void> {
         return new Promise(async (resolve, reject) => {
             const request = (await this.db)
                 .transaction([storeName], 'readwrite')
@@ -131,7 +136,7 @@ class DBService {
         });
     }
 
-    public async getAll(storeName: StoreName): Promise<Record<string, any>> {
+    public async getAll(storeName: PieceEnum): Promise<Record<string, any>> {
         return new Promise(async (resolve, reject) => {
             const request = (await this.db)
                 .transaction([storeName], 'readonly')
@@ -156,7 +161,7 @@ class DBService {
         });
     }
 
-    public async delete(storeName: StoreName, key: string): Promise<void> {
+    public async delete(storeName: PieceEnum, key: string): Promise<void> {
         return new Promise(async (resolve, reject) => {
             const request = (await this.db)
                 .transaction([storeName], 'readwrite')
@@ -173,7 +178,7 @@ class DBService {
         });
     }
 
-    public async clear(storeName: StoreName): Promise<void> {
+    public async clear(storeName: PieceEnum): Promise<void> {
         return new Promise(async (resolve, reject) => {
             const request = (await this.db)
                 .transaction([storeName], 'readwrite')
@@ -214,9 +219,9 @@ class DBService {
 
 export default DBService;
 
-export type {
-    StoreName,
-}
+// export type {
+//     StoreName,
+// }
 
 
 

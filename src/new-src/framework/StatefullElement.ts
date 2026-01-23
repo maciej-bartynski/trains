@@ -4,6 +4,7 @@ abstract class StatefullElement<
     TState extends object = {},
     TProps extends object = {}
 > extends HTMLElement {
+    static game: BoardModel;
 
     protected abstract state: Partial<TState>;
 
@@ -40,7 +41,6 @@ abstract class StatefullElement<
         }
         const nextPropsToken = JSON.stringify(Object.entries(nextProps).sort());
         const prevStateToken = JSON.stringify(Object.entries(this.props).sort());
-        console.log('setprops', nextPropsToken === prevStateToken)
         if (nextPropsToken !== prevStateToken) {
             this.props = nextProps;
             this.render(this.props);
@@ -56,8 +56,10 @@ abstract class StatefullElement<
 
     abstract connected(): void;
 
-    async connectedCallback() {
-        await BoardModel.I().configured;
+    connectedCallback() {
+        if (!StatefullElement.game) {
+            throw new Error('Seems you try to mount component before store is ready!')
+        }
         this.connected();
         this.render(this.props);
         this.mounted();

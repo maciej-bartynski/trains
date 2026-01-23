@@ -1,13 +1,21 @@
+import BuildingKind from "../enums/BuildingKind.js";
 import Direction from "../enums/Direction.js";
+import Orientation from "../enums/Orientation.js";
+import TrackKind from "../enums/TrackKind.js";
 import DB from "../framework/DbService.js";
+import State from "../framework/State.js";
+import StatefullElement from "../framework/StatefullElement.js";
 import baseSetup from "../scenarios/base.js";
 import Address from "../types/Address.js";
 import AddressUtils from "../utils/AddressUtils.js";
 import AdjacentFields from "../utils/AdjacentFields.js";
+import BuildingUtils from "../utils/BuildingUtils.js";
+import TrackUtils from "../utils/TrackUtils.js";
 import PieceEnum, { BoardState, SetupState } from "./BoardModel.type.js";
 import BuildingModel from "./BuildingModel.js";
 import EventsModel from "./EventsModel.js";
 import FieldModel from "./FieldModel.js";
+import TrackModel from "./TrackModel.js";
 import TrainModel from "./TrainModel.js";
 
 class BoardModel {
@@ -19,10 +27,12 @@ class BoardModel {
     }
 
     _listenersByPiece: Record<PieceEnum, (() => void)[]> = {
-        'buildings': [],
-        'fields': [],
-        'events': [],
-        'trains': []
+        [PieceEnum.Buildings]: [],
+        [PieceEnum.Fields]: [],
+        [PieceEnum.Events]: [],
+        [PieceEnum.Trains]: [],
+        [PieceEnum.Tracks]: [],
+        [PieceEnum.SelectedField]: []
     }
 
     private _notifyListeners(type?: PieceEnum) {
@@ -67,9 +77,9 @@ class BoardModel {
         }
     }
 
-    public setState(newState: Partial<BoardState>): void;
-    public setState<T extends PieceEnum>(newState: Pick<BoardState, T>, type: T): void
-    public setState<T extends PieceEnum>(newState: Partial<BoardState> | Pick<BoardState, T>, type?: T): void {
+    private setState(newState: Partial<BoardState>): void;
+    private setState<T extends PieceEnum>(newState: Pick<BoardState, T>, type: T): void
+    private setState<T extends PieceEnum>(newState: Partial<BoardState> | Pick<BoardState, T>, type?: T): void {
         this._state = {
             ...this._state,
             ...newState,
@@ -82,11 +92,16 @@ class BoardModel {
         }
     }
 
+    public setSelectedField(payload: { selectedField: null | Address }) {
+        this.setState(payload)
+    }
+
     public getStateByAddress(address: Address) {
         const key = AddressUtils.toKey(address);
         const field = this.state.fields.get(key);
         const events = this.state.events.get(key);
         const trains: TrainModel[] = [];
+        const tracks = this.state[PieceEnum.Tracks].get(key);
         this.state.trains.forEach((train) => {
             if (AddressUtils.isAddressEqual(train.state.location, address)) {
                 trains.push(train);
@@ -99,7 +114,8 @@ class BoardModel {
                 field,
                 events,
                 trains,
-                buildings
+                buildings,
+                tracks
             }
         }
 
@@ -121,6 +137,7 @@ class BoardModel {
             await dbService.createDb();
             const initialSetup: SetupState = baseSetup;
             stateFromSetup = {
+                ...baseSetup,
                 fields: new Map(
                     Object
                         .entries(initialSetup.fields)
@@ -153,10 +170,19 @@ class BoardModel {
                             return [key, new TrainModel(state)]
                         })
                 ),
+                tracks: new Map(
+                    Object
+                        .entries(initialSetup.tracks)
+                        .map(entry => {
+                            const [key, state] = entry;
+                            return [key, new TrackModel(state)]
+                        })
+                ),
             }
         } else {
             await dbService.createDb();
             stateFromSetup = {
+                ...baseSetup,
                 fields: new Map(
                     Object
                         .entries(await DB.I().getAll(PieceEnum.Fields))
@@ -176,8 +202,13 @@ class BoardModel {
                     Object
                         .entries(await DB.I().getAll(PieceEnum.Trains))
                         .map(([key, state]) => [key, new TrainModel(state)])
-                )
-            }
+                ),
+                tracks: new Map(
+                    Object
+                        .entries(await DB.I().getAll(PieceEnum.Tracks))
+                        .map(([key, state]) => [key, new TrackModel(state)])
+                ),
+            };
         }
         this.setState(stateFromSetup);
         this._resolveConfigured?.()
@@ -200,10 +231,18 @@ class BoardModel {
         this.configure = this.configure.bind(this);
         this.restart = this.restart.bind(this);
         this.onUncoverField = this.onUncoverField.bind(this);
+        this.onBuildBuilding = this.onBuildBuilding.bind(this);
+        this.onBuildTrack = this.onBuildTrack.bind(this);
         this.subscribePiece = this.subscribePiece.bind(this);
         this.unsubscribePiece = this.unsubscribePiece.bind(this);
+        this.setSelectedField = this.setSelectedField.bind(this);
 
+        BuildingUtils.game = this;
+        TrackUtils.game = this;
+        State.game = this;
+        StatefullElement.game = this;
         FieldModel.game = this;
+        BuildingModel.game = this;
 
         this.configure();
     }
@@ -226,6 +265,84 @@ class BoardModel {
             });
 
         this._notifyListeners(PieceEnum.Fields);
+    }
+
+    public async onBuildBuilding(params: {
+        address: Address,
+        kind: BuildingKind
+    }) {
+        const { address, kind } = params;
+        const key = AddressUtils.toKey(address);
+
+        const canBuild = await BuildingUtils.canBuild({
+            address,
+            buildingKind: kind
+        })
+
+        if (canBuild) {
+            this.state[PieceEnum.Buildings].set(key, new BuildingModel({
+                _id: key,
+                address,
+                kind,
+                production: null,
+                storage: null,
+            }));
+
+            this._notifyListeners(PieceEnum.Buildings);
+        }
+    }
+
+    public async onBuildTrack(params: {
+        address: Address,
+        kind: TrackKind,
+        orientation: Orientation,
+    }) {
+        const { address, kind } = params;
+        const key = AddressUtils.toKey(address);
+
+        const { tracks } = this.getStateByAddress(address) ?? {};
+
+        const canBuild = await TrackUtils.canBuild({
+            address,
+            trackKind: kind,
+            options: { orientations: params.orientation }
+        })
+
+        if (canBuild) {
+
+            const existingTracks: Record<TrackKind, Orientation | null> = tracks?.state.orientations ?? {} as Record<TrackKind, Orientation | null>;
+
+            const mergedOrientations = Object
+                .entries(existingTracks)
+                .reduce((result, item, id, self) => {
+                    const [kind, orientation] = item as [TrackKind, Orientation];
+                    if (kind === params.kind) {
+                        result[kind] = orientation ? {
+                            ...orientation,
+                            ...params.orientation
+                        } : params.orientation;
+                    } else {
+                        result[kind] = orientation ? {
+                            ...orientation,
+                        } : null;
+                    }
+
+                    return result;
+                }, {
+                    railway: null,
+                    road: null,
+                    sail: null,
+                    fly: null,
+                } as Record<TrackKind, Orientation | null>)
+
+            this.state[PieceEnum.Tracks].set(key, new TrackModel({
+                _id: key,
+                address,
+                orientations: mergedOrientations
+            }));
+
+            this._notifyListeners(PieceEnum.Tracks);
+        }
     }
 }
 

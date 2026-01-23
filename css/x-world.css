@@ -1,0 +1,5 @@
+.x-world_frame {
+    display: block;
+    position: relative;
+    border: solid 1px blue;
+}

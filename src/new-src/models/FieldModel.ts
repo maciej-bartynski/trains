@@ -1,16 +1,12 @@
 import State from "../framework/State.js";
 import Address from "../types/Address.js";
-import BuildingKind from "../enums/BuildingKind.js";
 import FieldVisibility from "../enums/FieldVisibility.js";
-import Orientation, { OrientationSquareVariant } from "../enums/Orientation.js";
 import TerrainUtils from "../utils/TerrainUtils.js";
 import { FieldState, utilFieldStateOnInit } from "./FieldModel.type.js";
-import BoardModel from "./BoardModel.js";
 import AddressUtils from "../utils/AddressUtils.js";
+import PieceEnum from "./BoardModel.type.js";
 
 class FieldModel extends State<FieldState> {
-    static game: BoardModel;
-
     constructor(data: Address | FieldState) {
 
         if (!FieldModel.game) {
@@ -23,11 +19,11 @@ class FieldModel extends State<FieldState> {
         if (isFieldState) {
             super({
                 initialState: data,
-                store: 'fields'
+                store: PieceEnum.Fields
             })
         } else if (isAddress) {
             super({
-                store: 'fields',
+                store: PieceEnum.Fields,
                 initialState: {
                     _id: AddressUtils.toKey(data),
                     address: data,
@@ -35,12 +31,7 @@ class FieldModel extends State<FieldState> {
                     terrain: null,
                     terrainImageNumber: null,
                     terrainImageRotation: null,
-                    railwayOrientation: null,
-                    railwayOrientationSquareVariant: null,
-                    building: null,
                     resources: null,
-                    production: null,
-                    storage: null
                 }
             });
         } else {
@@ -48,8 +39,6 @@ class FieldModel extends State<FieldState> {
         }
 
         this.handleUncover = this.handleUncover.bind(this);
-        this.handleBuilding = this.handleBuilding.bind(this);
-        this.handleTrack = this.handleTrack.bind(this);
     }
 
     public handleUncover() {
@@ -64,18 +53,6 @@ class FieldModel extends State<FieldState> {
             });
             FieldModel.game.onUncoverField({ address: this.state.address });
         }
-    }
-
-    private handleBuilding(building: BuildingKind) {
-        if (!this.state.building) {
-            this.setState({
-                building,
-            })
-        }
-    }
-
-    private handleTrack(orientation: Orientation, crossingVariant: OrientationSquareVariant) {
-
     }
 }
 

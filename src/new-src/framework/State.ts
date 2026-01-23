@@ -1,6 +1,11 @@
-import DB, { StoreName } from "./DbService.js";
+import BoardModel from "../models/BoardModel.js";
+import PieceEnum from "../models/BoardModel.type.js";
+import DB from "./DbService.js";
 
 abstract class State<T extends Object & { _id: string }> {
+
+    static game: BoardModel;
+
     private _state: T = {} as T;
 
     get state() {
@@ -13,10 +18,10 @@ abstract class State<T extends Object & { _id: string }> {
         this._listeners.forEach(l => l(this.state));
     }
 
-    private _storeName: StoreName;
+    private _storeName: PieceEnum;
 
     constructor(params: {
-        store: StoreName;
+        store: PieceEnum;
         initialState: T & { _id: string },
         initialListeners?: (() => void)[],
         initialNotify?: boolean;
@@ -41,7 +46,7 @@ abstract class State<T extends Object & { _id: string }> {
         DB.I().set(this._storeName, params.initialState);
     }
 
-    public willChange(newState: Partial<T>): boolean {
+    private willChange(newState: Partial<T>): boolean {
         const oldState = this.state;
         const nextState = {
             ...oldState,
@@ -56,7 +61,7 @@ abstract class State<T extends Object & { _id: string }> {
         return true;
     }
 
-    public setState(newState: Partial<T>) {
+    protected setState(newState: Partial<T>) {
         if (this.willChange(newState)) {
             const nextState = {
                 ...this.state,
@@ -75,8 +80,8 @@ abstract class State<T extends Object & { _id: string }> {
         }
     }
 
-    public unsubscribe(listener: () => void) {
-        if (!this._listeners.includes(listener)) {
+    public unsubscribe(listener: (state: T) => void) {
+        if (this._listeners.includes(listener)) {
             this._listeners = this._listeners.filter(l => l !== listener)
         }
     }
