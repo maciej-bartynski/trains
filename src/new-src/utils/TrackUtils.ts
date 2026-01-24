@@ -5,6 +5,98 @@ import TrackKind from "../enums/TrackKind.js";
 import Orientation from "../enums/Orientation.js";
 import Direction from "../enums/Direction.js";
 
+// export function canBuildRailwayTrack(
+//     address: Address,
+//     game: BoardModel,
+//     trackKind: TrackKind,
+//     options: {
+//         orientations: Orientation
+//     }) {
+
+//     const {
+//         field,
+//         buildings,
+//         tracks,
+//     } = game.getStateByAddress(address) ?? {};
+
+//     if (buildings || !field?.state.terrain) {
+//         return false;
+//     }
+
+//     if ([TerrainKind.Water, TerrainKind.WaterCold].includes(field.state.terrain)) {
+//         return false;
+//     }
+
+//     type TrackNode = Direction | 'center';
+
+//     const getOccupiedNodes = (orientation?: Orientation | null): Set<TrackNode> => {
+//         const occupied = new Set<TrackNode>();
+//         if (!orientation) return occupied;
+
+//         if (orientation.center) {
+//             occupied.add('center');
+//             Object.entries(orientation.center).forEach(([dir, isConnected]) => {
+//                 if (isConnected) occupied.add(dir as Direction);
+//             });
+//         }
+
+//         Object.entries(orientation).forEach(([node, connections]) => {
+//             if (node === 'center' || !connections) return;
+//             const hasConnection = Object.values(connections).some(Boolean);
+//             if (hasConnection) occupied.add(node as Direction);
+//             if ((connections as Record<string, boolean>)['center']) occupied.add('center');
+//         });
+
+//         return occupied;
+//     };
+
+//     const isSubset = (subset: Set<TrackNode>, superset: Set<TrackNode>) => {
+//         for (const v of subset) {
+//             if (!superset.has(v)) return false;
+//         }
+//         return true;
+//     };
+
+//     const newNodes = getOccupiedNodes(options.orientations);
+//     const existingOrientations = tracks?.state.orientations ?? {};
+
+//     const existingNodesByKind = Object.entries(existingOrientations).reduce<Record<string, Set<TrackNode>>>(
+//         (acc, [kind, orientation]) => {
+//             acc[kind] = getOccupiedNodes(orientation as Orientation | null);
+//             return acc;
+//         },
+//         {}
+//     );
+
+//     const hasAnyExistingTrack = Object.values(existingNodesByKind).some(nodes => nodes.size > 0);
+//     const anyExistingCenter = Object.values(existingNodesByKind).some(nodes => nodes.has('center'));
+
+//     // Center always occupies whole field.
+//     if (newNodes.has('center')) {
+//         return !hasAnyExistingTrack;
+//     }
+
+//     // If something already uses center, nothing else can be built.
+//     if (anyExistingCenter) {
+//         return false;
+//     }
+
+//     // Duplicate if all new nodes already occupied by SAME track kind (new ⊆ existing).
+//     const sameKindNodes = existingNodesByKind[trackKind];
+//     if (sameKindNodes && isSubset(newNodes, sameKindNodes)) {
+//         return false;
+//     }
+
+//     // Different track kinds cannot share any node.
+//     for (const [existingKind, existingNodes] of Object.entries(existingNodesByKind)) {
+//         if (existingKind === trackKind) continue;
+//         const overlaps = [...newNodes].some(node => existingNodes.has(node));
+//         if (overlaps) return false;
+//     }
+
+//     return true;
+// }
+
 export function canBuildRailwayTrack(
     address: Address,
     game: BoardModel,
@@ -50,7 +142,32 @@ export function canBuildRailwayTrack(
         return occupied;
     };
 
-    const isSubset = (subset: Set<TrackNode>, superset: Set<TrackNode>) => {
+    const getEdges = (orientation?: Orientation | null): Set<string> => {
+        const edges = new Set<string>();
+        if (!orientation) return edges;
+
+        const addEdge = (a: TrackNode, b: TrackNode) => {
+            const key = [a, b].sort().join('|'); // left-top == top-left
+            edges.add(key);
+        };
+
+        if (orientation.center) {
+            Object.entries(orientation.center).forEach(([dir, isConnected]) => {
+                if (isConnected) addEdge('center', dir as Direction);
+            });
+        }
+
+        Object.entries(orientation).forEach(([fromNode, connections]) => {
+            if (fromNode === 'center' || !connections) return;
+            Object.entries(connections).forEach(([toNode, isConnected]) => {
+                if (isConnected) addEdge(fromNode as Direction, toNode as TrackNode);
+            });
+        });
+
+        return edges;
+    };
+
+    const isSubset = (subset: Set<string>, superset: Set<string>) => {
         for (const v of subset) {
             if (!superset.has(v)) return false;
         }
@@ -58,11 +175,20 @@ export function canBuildRailwayTrack(
     };
 
     const newNodes = getOccupiedNodes(options.orientations);
+    const newEdges = getEdges(options.orientations);
     const existingOrientations = tracks?.state.orientations ?? {};
 
     const existingNodesByKind = Object.entries(existingOrientations).reduce<Record<string, Set<TrackNode>>>(
         (acc, [kind, orientation]) => {
             acc[kind] = getOccupiedNodes(orientation as Orientation | null);
+            return acc;
+        },
+        {}
+    );
+
+    const existingEdgesByKind = Object.entries(existingOrientations).reduce<Record<string, Set<string>>>(
+        (acc, [kind, orientation]) => {
+            acc[kind] = getEdges(orientation as Orientation | null);
             return acc;
         },
         {}
@@ -81,9 +207,9 @@ export function canBuildRailwayTrack(
         return false;
     }
 
-    // Duplicate if all new nodes already occupied by SAME track kind (new ⊆ existing).
-    const sameKindNodes = existingNodesByKind[trackKind];
-    if (sameKindNodes && isSubset(newNodes, sameKindNodes)) {
+    // Duplicate only if ALL new edges already exist for SAME kind.
+    const sameKindEdges = existingEdgesByKind[trackKind];
+    if (sameKindEdges && isSubset(newEdges, sameKindEdges)) {
         return false;
     }
 
