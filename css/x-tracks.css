@@ -1,0 +1,111 @@
+x-track {
+    position: absolute;
+    width: 50px;
+    height: 50px;
+    display: block;
+}
+
+.x-track_layer-railway,
+.x-track_layer-road,
+.x-track_layer-sail,
+.x-track_layer-fly {
+    position: absolute;
+    width: 50px;
+    height: 50px;
+    display: block;
+}
+
+.x-track_to-center {
+    width: 25px;
+    height: 6px;
+    background-color: black;
+    position: absolute;
+}
+
+.x-track_to-center.--top {
+    width: 6px;
+    height: 25px;
+    top: 0;
+    left: 22px;
+}
+
+.x-track_to-center.--right {
+    height: 6px;
+    width: 25px;
+    top: 22px;
+    left: 25px;
+}
+
+.x-track_to-center.--bottom {
+    width: 6px;
+    height: 25px;
+    top: 25px;
+    left: 22px;
+}
+
+.x-track_to-center.--left {
+    height: 6px;
+    width: 25px;
+    top: 22px;
+    left: 0px;
+}
+
+.x-track_straight {
+    width: 50px;
+    height: 6px;
+    background-color: black;
+    position: absolute;
+}
+
+.x-track_straight.--horizontal {
+    width: 50px;
+    height: 6px;
+    left: 0;
+    top: 22px;
+}
+
+.x-track_straight.--vertical {
+    width: 6px;
+    height: 50px;
+    left: 22px;
+    top: 0px;
+}
+
+.x-track_curve {
+    width: 28px;
+    height: 28px;
+    position: absolute;
+    border-radius: 0;
+}
+
+.x-track_curve.--top-right {
+    border-bottom: solid 6px black;
+    border-left: solid 6px black;
+    border-bottom-left-radius: 25px;
+    top: 0;
+    right: 0;
+}
+
+.x-track_curve.--right-bottom {
+    border-top: solid 6px black;
+    border-left: solid 6px black;
+    border-top-left-radius: 25px;
+    bottom: 0;
+    right: 0;
+}
+
+.x-track_curve.--bottom-left {
+    border-top: solid 6px black;
+    border-right: solid 6px black;
+    border-top-right-radius: 25px;
+    bottom: 0;
+    left: 0;
+}
+
+.x-track_curve.--left-top {
+    border-bottom: solid 6px black;
+    border-right: solid 6px black;
+    border-bottom-right-radius: 25px;
+    left: 0;
+    top: 0;
+}

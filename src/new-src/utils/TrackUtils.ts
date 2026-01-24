@@ -5,7 +5,7 @@ import TrackKind from "../enums/TrackKind.js";
 import Orientation from "../enums/Orientation.js";
 import Direction from "../enums/Direction.js";
 
-export async function canBuildRailwayTrack(
+export function canBuildRailwayTrack(
     address: Address,
     game: BoardModel,
     trackKind: TrackKind,
@@ -105,39 +105,6 @@ type CanBuildParams = {
     }
 }
 
-interface trackUtils {
-    game?: BoardModel;
-    canBuild(params: CanBuildParams): Promise<boolean>;
-    canBuildRailwayTrack(address: Address, game: BoardModel, trackKind: TrackKind, options: { orientations: Orientation }): Promise<boolean>;
-}
-
-const TrackUtils: trackUtils = {
-    async canBuild({
-        address,
-        trackKind,
-        options
-    }: CanBuildParams) {
-        if (!this.game) return false;
-        await this.game.configured;
-
-        switch (trackKind) {
-
-            case TrackKind.Railway: {
-                return this.canBuildRailwayTrack(address, this.game, trackKind, options);
-            }
-
-            default: {
-                return false;
-            }
-
-        }
-    },
-
-    canBuildRailwayTrack,
-}
-
-export default TrackUtils;
-
 enum TrackVariantName {
     Vertical = 'vertical',
     Horizontal = 'horizontal',
@@ -214,3 +181,191 @@ const TrackVariantTR = {
         'center': null,
     }
 }
+const TrackVariantRB = {
+    variant: TrackVariantName.RightBottom,
+    orientation: {
+        [Direction.Top]: null,
+        [Direction.Right]: {
+            [Direction.Top]: FALSE,
+            [Direction.Bottom]: TRUE,
+            [Direction.Left]: FALSE,
+            'center': FALSE,
+        },
+        [Direction.Bottom]: {
+            [Direction.Top]: FALSE,
+            [Direction.Right]: TRUE,
+            [Direction.Left]: FALSE,
+            'center': FALSE,
+        },
+        [Direction.Left]: null,
+        'center': null,
+    }
+}
+const TrackVariantBL = {
+    variant: TrackVariantName.BottomLeft,
+    orientation: {
+        [Direction.Top]: null,
+        [Direction.Right]: null,
+        [Direction.Bottom]: {
+            [Direction.Top]: FALSE,
+            [Direction.Right]: FALSE,
+            [Direction.Left]: TRUE,
+            'center': FALSE,
+        },
+        [Direction.Left]: {
+            [Direction.Top]: FALSE,
+            [Direction.Bottom]: TRUE,
+            [Direction.Right]: FALSE,
+            'center': FALSE,
+        },
+        'center': null,
+    }
+}
+
+const TrackVariantLT = {
+    variant: TrackVariantName.LeftTop,
+    orientation: {
+        [Direction.Top]: {
+            [Direction.Right]: FALSE,
+            [Direction.Bottom]: FALSE,
+            [Direction.Left]: TRUE,
+            'center': FALSE,
+        },
+        [Direction.Right]: null,
+        [Direction.Bottom]: null,
+        [Direction.Left]: {
+            [Direction.Top]: TRUE,
+            [Direction.Bottom]: FALSE,
+            [Direction.Right]: FALSE,
+            'center': FALSE,
+        },
+        'center': null,
+    }
+}
+const TrackVariantCenterTop = {
+    variant: TrackVariantName.CenterTop,
+    orientation: {
+        [Direction.Top]: {
+            [Direction.Bottom]: FALSE,
+            [Direction.Left]: FALSE,
+            [Direction.Right]: FALSE,
+            'center': TRUE,
+        },
+        [Direction.Right]: null,
+        [Direction.Bottom]: null,
+        [Direction.Left]: null,
+        'center': {
+            [Direction.Top]: TRUE,
+            [Direction.Bottom]: FALSE,
+            [Direction.Left]: FALSE,
+            [Direction.Right]: FALSE,
+        }
+    }
+}
+const TrackVariantCenterRight = {
+    variant: TrackVariantName.CenterRight,
+    orientation: {
+        [Direction.Top]: null,
+        [Direction.Right]: {
+            [Direction.Top]: FALSE,
+            [Direction.Bottom]: FALSE,
+            [Direction.Left]: FALSE,
+            'center': TRUE,
+        },
+        [Direction.Bottom]: null,
+        [Direction.Left]: null,
+        'center': {
+            [Direction.Top]: FALSE,
+            [Direction.Bottom]: FALSE,
+            [Direction.Left]: FALSE,
+            [Direction.Right]: TRUE,
+        }
+    }
+}
+const TrackVariantCenterBottom = {
+    variant: TrackVariantName.CenterBottom,
+    orientation: {
+        [Direction.Top]: null,
+        [Direction.Right]: null,
+        [Direction.Bottom]: {
+            [Direction.Top]: FALSE,
+            [Direction.Right]: FALSE,
+            [Direction.Left]: FALSE,
+            'center': TRUE,
+        },
+        [Direction.Left]: null,
+        'center': {
+            [Direction.Top]: FALSE,
+            [Direction.Bottom]: TRUE,
+            [Direction.Left]: FALSE,
+            [Direction.Right]: FALSE,
+        }
+    }
+}
+
+const TrackVariantCenterLeft = {
+    variant: TrackVariantName.CenterLeft,
+    orientation: {
+        [Direction.Top]: null,
+        [Direction.Right]: null,
+        [Direction.Bottom]: null,
+        [Direction.Left]: {
+            [Direction.Top]: FALSE,
+            [Direction.Bottom]: FALSE,
+            [Direction.Right]: FALSE,
+            'center': TRUE,
+        },
+        'center': {
+            [Direction.Top]: FALSE,
+            [Direction.Bottom]: FALSE,
+            [Direction.Left]: TRUE,
+            [Direction.Right]: FALSE,
+        }
+    }
+}
+
+const TrackVariants = {
+    TrackVariantVertical,
+    TrackVariantHorizontal,
+    TrackVariantTR,
+    TrackVariantRB,
+    TrackVariantBL,
+    TrackVariantLT,
+    TrackVariantCenterTop,
+    TrackVariantCenterRight,
+    TrackVariantCenterBottom,
+    TrackVariantCenterLeft,
+}
+
+interface trackUtils {
+    TrackVariants: typeof TrackVariants;
+    game?: BoardModel;
+    canBuild(params: CanBuildParams): boolean;
+    canBuildRailwayTrack(address: Address, game: BoardModel, trackKind: TrackKind, options: { orientations: Orientation }): boolean;
+}
+
+const TrackUtils: trackUtils = {
+    canBuild({
+        address,
+        trackKind,
+        options
+    }: CanBuildParams) {
+        if (!this.game) return false;
+
+        switch (trackKind) {
+
+            case TrackKind.Railway: {
+                return this.canBuildRailwayTrack(address, this.game, trackKind, options);
+            }
+
+            default: {
+                return false;
+            }
+
+        }
+    },
+    canBuildRailwayTrack,
+    TrackVariants
+}
+
+export default TrackUtils;

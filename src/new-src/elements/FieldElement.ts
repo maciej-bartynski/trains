@@ -4,6 +4,7 @@ import PieceEnum from "../models/BoardModel.type.js";
 import FieldModel from "../models/FieldModel.js";
 import AddressUtils from "../utils/AddressUtils.js";
 import FieldElementHelpers from "./FieldElement.helpers.js";
+import WorldElement from "./WorldElement.js";
 
 class FieldElement extends StatefullElement<{
     selected: boolean;
@@ -17,11 +18,15 @@ class FieldElement extends StatefullElement<{
         return document.createElement('x-field') as FieldElement;
     }
 
-    private styleEl!: HTMLStyleElement;
-
     override state = {
         selected: false
     }
+
+    private selectionLayer = (() => {
+        const div = document.createElement('div');
+        div.classList.add(`${FieldElement.tagName}_field-selection-layer`);
+        return div;
+    })();
 
     constructor() {
         super();
@@ -44,25 +49,7 @@ class FieldElement extends StatefullElement<{
     }
 
     override connected(): void {
-        this.innerHTML = `
-            <style>
-                x-field {
-                    width: 50px;
-                    height: 50px;
-                    position: absolute;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    font-size: 9px;
-                    font-family: sans-serif;
-                    color: black;
-                    user-select: none;
-                    cursor: pointer;
-                }
-            </style>
-        `;
 
-        this.styleEl = this.querySelector('style') as HTMLStyleElement;
     }
 
     override render({
@@ -78,15 +65,19 @@ class FieldElement extends StatefullElement<{
         this.style.left = `${50 * address.column}px`;
         this.style.top = `${50 * address.row}px`;
 
-        if (this.props.isSelected) {
-            this.style.zIndex = '1'
-            this.style.outline = 'solid 1px blue'
-        } else {
-            this.style.outline = 'unset'
-            this.style.zIndex = '0'
+        this.selectionLayer.style.left = `${50 * address.column}px`;
+        this.selectionLayer.style.top = `${50 * address.row}px`;
+
+        if (!this.selectionLayer.isConnected) {
+            const world = document.querySelector(WorldElement.tagName) as WorldElement;
+            world.appendFrameChild(this.selectionLayer);
         }
 
-        this.appendChild(this.styleEl)
+        if (this.props.isSelected) {
+            this.selectionLayer.style.outline = 'solid 1px blue'
+        } else {
+            this.selectionLayer.style.outline = 'none'
+        }
     }
 
     private subscribeSelectedField() {
@@ -100,13 +91,13 @@ class FieldElement extends StatefullElement<{
     }
 
     override changed(): void {
-        this.onclick = this.props.visibility === FieldVisibility.Visible
+        this.selectionLayer.onclick = this.props.visibility === FieldVisibility.Visible
             ? this.onFieldSelect
             : this.onFieldClick
     }
 
     override mounted(): void {
-        this.onclick = this.onFieldClick
+        this.selectionLayer.onclick = this.onFieldClick
         const params = FieldModel.game.getStateByAddress(this.props.address);
         if (params) {
             params.field.subscribe(this.setProps);

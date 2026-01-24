@@ -49,9 +49,11 @@ class TrackElement extends StatefullElement<{}, TrackModel['state']> {
 
     override connected(): void {
         this.innerHTML = ``;
+
         Object.values(TrackKind).forEach(trackKindName => {
-            this.innerHTML += `<div data-selector="${trackKindName}" class="${TrackElement.tagName}_layer-${trackKindName.toLowerCase()}"></div>`;
-            this[trackKindName] = this.querySelector(`[data-selector="${trackKindName}"]`) as HTMLDivElement;
+            this[trackKindName].setAttribute('data-selector', trackKindName);
+            this[trackKindName].classList.add(`${TrackElement.tagName}_layer-${trackKindName.toLowerCase()}`);
+            this.appendChild(this[trackKindName]);
         })
 
         this.trackCenter.classList.add(`${TrackElement.tagName}_to-center`);
@@ -63,6 +65,7 @@ class TrackElement extends StatefullElement<{}, TrackModel['state']> {
         address,
         orientations
     }: TrackModel['state']) {
+
         this.style.left = `${50 * address.column}px`;
         this.style.top = `${50 * address.row}px`;
 
@@ -73,7 +76,6 @@ class TrackElement extends StatefullElement<{}, TrackModel['state']> {
                  * Has tracks of current kind
                  */
                 const layerElement = this[trackKind];
-                this.appendChild(layerElement);
 
                 if (orientation.center) {
                     /**
@@ -98,6 +100,7 @@ class TrackElement extends StatefullElement<{}, TrackModel['state']> {
                     const checkedDirectionPairs: Array<[Direction, Direction]> = [];
 
                     Object.entries(orientation).forEach(directionEntry => {
+
                         const [direction, connectedDirections] = directionEntry as [Direction | 'center', Record<Direction, boolean> | null];
 
                         if (direction === 'center') return;
@@ -132,7 +135,7 @@ class TrackElement extends StatefullElement<{}, TrackModel['state']> {
                             const isVertical = uniquePair.some(dir => dir === Direction.Bottom);
 
                             if (isVertical) {
-                                trackElement.classList.add(`--vertical`)
+                                trackElement.classList.add(`--vertical`);
                             } else {
                                 trackElement.classList.add(`--horizontal`)
                             }
@@ -158,9 +161,6 @@ class TrackElement extends StatefullElement<{}, TrackModel['state']> {
             }
         })
 
-
-
-
     }
 
     override changed(): void {
@@ -168,14 +168,14 @@ class TrackElement extends StatefullElement<{}, TrackModel['state']> {
     }
 
     override mounted(): void {
-        const params = BuildingModel.game.getStateByAddress(this.props.address);
+        const params = StatefullElement.game.getStateByAddress(this.props.address);
         if (params?.tracks) {
             params.tracks.subscribe(this.setProps);
         }
     }
 
     disconnectedCallback() {
-        const params = BuildingModel.game.getStateByAddress(this.props.address);
+        const params = StatefullElement.game.getStateByAddress(this.props.address);
         if (params?.tracks) {
             params.tracks.unsubscribe(this.setProps);
         }

@@ -502,8 +502,6 @@ class RouteItem extends StatefullComponent<State, Props> {
     private subscriptionHelper: RouteEventModel | undefined;
 
     connectedCallback() {
-
-        console.log("do i sub s ")
         const { route } = this.getProps();
         const destinationEvent = route[route.length - 1];
         if (this.subscriptionHelper) {

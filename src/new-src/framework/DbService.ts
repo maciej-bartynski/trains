@@ -1,19 +1,10 @@
 import PieceEnum from "../models/BoardModel.type.js";
 
-// type StoreName = keyof typeof DBService.STORES
-
 class DBService {
 
     static NAME = 'game';
 
     static VERSION = 1;
-
-    // static STORES: = {
-    //     fields: 'fields' as 'fields',
-    //     trains: 'trains' as 'trains',
-    //     buildings: 'buildings' as 'buildings',
-    //     events: 'events' as 'events',
-    // }
 
     public async createDb(): Promise<void> {
         const dbPromise: Promise<IDBDatabase> = new Promise((resolve, reject) => {
@@ -218,10 +209,6 @@ class DBService {
 }
 
 export default DBService;
-
-// export type {
-//     StoreName,
-// }
 
 
 

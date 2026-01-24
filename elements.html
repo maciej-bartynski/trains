@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test page</title>
+    <script type="importmap">
+    {
+        "imports": {
+            "#src/": "./dist/"
+        }
+    }
+    </script>
+    <link rel="stylesheet" href="./css/x.css" />
+    <link rel="stylesheet" href="./css/x-world.css" />
+    <link rel="stylesheet" href="./css/x-tracks.css" />
+    <link rel="stylesheet" href="./css/x-field.css" />
+</head>
+
+<body>
+    <a href="test.html">game</a>
+    <h1>elements</h1>
+
+    <section id="railway-tracks">
+        <h2>Railway tracks</h2>
+
+        <x-track>
+            <div class="x-track_straight --horizontal"></div>
+        </x-track>
+
+        <x-track>
+            <div class="x-track_straight --vertical"></div>
+        </x-track>
+
+        <x-track>
+            <div class="x-track_to-center --top"></div>
+        </x-track>
+        <x-track>
+            <div class="x-track_to-center --right"></div>
+        </x-track>
+        <x-track>
+            <div class="x-track_to-center --bottom"></div>
+        </x-track>
+        <x-track>
+            <div class="x-track_to-center --left"></div>
+        </x-track>
+
+        <x-track>
+            <div class="x-track_curve --top-right"></div>
+        </x-track>
+        <x-track>
+            <div class="x-track_curve --right-bottom"></div>
+        </x-track>
+        <x-track>
+            <div class="x-track_curve --bottom-left"></div>
+        </x-track>
+        <x-track>
+            <div class="x-track_curve --left-top"></div>
+        </x-track>
+
+        <script>
+            const section = document.getElementById('railway-tracks');
+            const divs = section.querySelectorAll('x-track');
+
+            for (const div of divs) {
+                div.style.position = 'relative'
+            }
+        </script>
+    </section>
+
+</body>
+
+</html>

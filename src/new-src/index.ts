@@ -6,13 +6,17 @@ import PieceEnum from "./models/BoardModel.type.js";
 import AddressUtils from "./utils/AddressUtils.js";
 import DB from "./framework/DbService.js";
 import WorldElement from "./elements/WorldElement.js";
+import MenuBuildRailway from "./elements/MenuBuildRailway.js";
+import TrackElement from "./elements/TrackElement.js";
 
 // indexedDB.deleteDatabase('game');
 
 customElements.define(FieldElement.tagName, FieldElement);
 customElements.define(BuildingElement.tagName, BuildingElement);
 customElements.define(FieldMenuElement.tagName, FieldMenuElement);
+customElements.define(MenuBuildRailway.tagName, MenuBuildRailway);
 customElements.define(WorldElement.tagName, WorldElement);
+customElements.define(TrackElement.tagName, TrackElement);
 
 const GameInstance = BoardModel.I();
 
@@ -26,6 +30,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const worldElement = WorldElement.createElement();
     const fieldMenuElement = document.createElement(FieldMenuElement.tagName);
+    const menuBuildRailway = document.createElement(MenuBuildRailway.tagName);
 
     resetGameBtn.onclick = async () => {
         GameInstance.unsubscribePiece(gameSub)
@@ -38,6 +43,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     document.body.appendChild(resetGameBtn);
     document.body.appendChild(fieldMenuElement);
+    document.body.appendChild(menuBuildRailway);
     document.body.appendChild(worldElement);
 
     document.oncontextmenu = (e => {
@@ -45,6 +51,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     })
 
     const gameSub = () => {
+
         const fields = GameInstance.state.fields;
         const buildings = GameInstance.state.buildings;
         const _fieldElements = document.querySelectorAll(`${FieldElement.tagName}[data-field]`) as NodeListOf<FieldElement>;
@@ -118,8 +125,47 @@ document.addEventListener('DOMContentLoaded', async () => {
         buildingElements.forEach(el => {
             el.remove()
         });
+
+        ///
+
+        const _trackElements = document.querySelectorAll(`${TrackElement.tagName}[data-field]`) as NodeListOf<TrackElement>;
+        let trackElements = [..._trackElements];
+        const tracks = GameInstance.state.tracks;
+
+        tracks.forEach((trackModel, addressKey) => {
+            let foundId;
+            let trackEl = trackElements.find((el, id) => {
+                if (AddressUtils.isAddressEqual(el.props.address, trackModel.state.address)) {
+                    foundId = id;
+                    return true;
+                }
+                return false;
+            });
+
+            if (typeof foundId === 'number') {
+                trackElements = [
+                    ...trackElements.slice(0, foundId),
+                    ...trackElements.slice(foundId + 1)
+                ]
+            }
+
+            if (!trackEl) {
+                trackEl = document.createElement(TrackElement.tagName) as TrackElement;
+                trackEl.setAttribute('data-field', trackModel.state._id);
+                trackEl.props = trackModel.state;
+            }
+
+            if (!trackEl.isConnected) {
+                worldElement.appendFrameChild(trackEl)
+            }
+        });
+
+        trackElements.forEach(el => {
+            el.remove()
+        });
     }
 
-    GameInstance.subscribePiece(gameSub, { type: PieceEnum.Fields })
-    GameInstance.subscribePiece(gameSub, { type: PieceEnum.Buildings })
+    GameInstance.subscribePiece(gameSub, { type: PieceEnum.Fields });
+    GameInstance.subscribePiece(gameSub, { type: PieceEnum.Buildings });
+    GameInstance.subscribePiece(gameSub, { type: PieceEnum.Tracks });
 });

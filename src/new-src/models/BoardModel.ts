@@ -92,10 +92,6 @@ class BoardModel {
         }
     }
 
-    public setSelectedField(payload: { selectedField: null | Address }) {
-        this.setState(payload)
-    }
-
     public getStateByAddress(address: Address) {
         const key = AddressUtils.toKey(address);
         const field = this.state.fields.get(key);
@@ -247,6 +243,12 @@ class BoardModel {
         this.configure();
     }
 
+
+    public setSelectedField(payload: { selectedField: null | Address }) {
+        this.state[PieceEnum.SelectedField] = payload.selectedField;
+        this._notifyListeners(PieceEnum.SelectedField)
+    }
+
     public onUncoverField(params: { address: Address }) {
         const { address } = params;
         const adjacentAddresses = AdjacentFields.getAdjacentAddresses({ address });
@@ -292,7 +294,7 @@ class BoardModel {
         }
     }
 
-    public async onBuildTrack(params: {
+    public onBuildTrack(params: {
         address: Address,
         kind: TrackKind,
         orientation: Orientation,
@@ -300,46 +302,55 @@ class BoardModel {
         const { address, kind } = params;
         const key = AddressUtils.toKey(address);
 
-        const { tracks } = this.getStateByAddress(address) ?? {};
-
-        const canBuild = await TrackUtils.canBuild({
+        const canBuild = TrackUtils.canBuild({
             address,
             trackKind: kind,
             options: { orientations: params.orientation }
         })
 
         if (canBuild) {
+            const { tracks } = this.getStateByAddress(address) ?? {};
 
             const existingTracks: Record<TrackKind, Orientation | null> = tracks?.state.orientations ?? {} as Record<TrackKind, Orientation | null>;
 
-            const mergedOrientations = Object
-                .entries(existingTracks)
-                .reduce((result, item, id, self) => {
-                    const [kind, orientation] = item as [TrackKind, Orientation];
-                    if (kind === params.kind) {
-                        result[kind] = orientation ? {
-                            ...orientation,
-                            ...params.orientation
+            const mergedOrientations = Object.values(TrackKind)
+                .reduce((result, kindName, id, self) => {
+                    if (kindName === params.kind) {
+
+                        let mergedOrientation = Object.assign({}, params.orientation);
+
+                        for (const direction in params.orientation) {
+                            if (!params.orientation[direction as Direction]) {
+                                delete mergedOrientation[direction as Direction];
+                            }
+                        }
+
+                        result[kindName] = existingTracks[kindName] ? {
+                            ...existingTracks[kindName],
+                            ...mergedOrientation
                         } : params.orientation;
                     } else {
-                        result[kind] = orientation ? {
-                            ...orientation,
-                        } : null;
+                        result[kindName] = existingTracks[kindName] ?? null;
                     }
-
                     return result;
                 }, {
-                    railway: null,
-                    road: null,
-                    sail: null,
-                    fly: null,
-                } as Record<TrackKind, Orientation | null>)
+                    [TrackKind.Railway]: null,
+                    [TrackKind.Road]: null,
+                    [TrackKind.Sail]: null,
+                    [TrackKind.Fly]: null,
+                } as Record<TrackKind, Orientation | null>);
 
-            this.state[PieceEnum.Tracks].set(key, new TrackModel({
-                _id: key,
-                address,
-                orientations: mergedOrientations
-            }));
+            let model = this.state[PieceEnum.Tracks].get(key);
+
+            if (!model) {
+                this.state[PieceEnum.Tracks].set(key, new TrackModel({
+                    _id: key,
+                    address,
+                    orientations: mergedOrientations
+                }));
+            } else {
+                model.updateOrientation(mergedOrientations)
+            }
 
             this._notifyListeners(PieceEnum.Tracks);
         }

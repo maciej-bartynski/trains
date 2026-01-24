@@ -1,14 +1,10 @@
-import BuildingKind from "../enums/BuildingKind.js";
-import Direction from "../enums/Direction.js";
-import Orientation from "../enums/Orientation.js";
+import TrackKind from "../enums/TrackKind.js";
 import StatefullElement from "../framework/StatefullElement.js";
 import BoardModel from "../models/BoardModel.js";
-import PieceEnum, { BoardState } from "../models/BoardModel.type.js";
+import PieceEnum from "../models/BoardModel.type.js";
 import FieldModel from "../models/FieldModel.js";
-import { FieldState } from "../models/FieldModel.type.js";
 import Address from "../types/Address.js";
-import AddressUtils from "../utils/AddressUtils.js";
-import BuildingUtils from "../utils/BuildingUtils.js";
+import TrackUtils from "../utils/TrackUtils.js";
 
 type PropsMenuBuildRailway = {
     selectedField: Address | null,
@@ -53,7 +49,10 @@ class MenuBuildRailway extends StatefullElement<{}, PropsMenuBuildRailway> {
                     justify-content: center;
                 }
             </style>
-            <div class="building-buttons-list"></div>
+            <div>
+                <div>Railway options</span>
+                <div class="building-buttons-list"></div>
+            </div<
         `;
 
         this.styleEl = this.querySelector('style') as HTMLStyleElement;
@@ -66,37 +65,51 @@ class MenuBuildRailway extends StatefullElement<{}, PropsMenuBuildRailway> {
 
         this.buttonsList.innerHTML = '';
 
-
-
         if (selectedField) {
 
+            const asyncSetButtons = async () => {
+                const promises = Object.values(TrackUtils.TrackVariants).map(async variantConfig => {
+                    const { variant, orientation } = variantConfig;
+                    return {
+                        can: await TrackUtils.canBuild({
+                            address: selectedField,
+                            trackKind: TrackKind.Railway,
+                            options: {
+                                orientations: orientation
+                            }
+                        }),
+                        orientation,
+                        variant,
+                    }
+                });
+
+                const resolvedPromises = await Promise.all(promises);
+                this.buttonsList.innerHTML = '';
+                resolvedPromises.forEach(data => {
+                    const { can, variant, orientation } = data;
+                    if (can) {
+                        const variantButton = document.createElement('button');
+                        variantButton.innerText = variant;
+                        variantButton.onclick = () => {
+                            BoardModel.I().onBuildTrack({
+                                address: selectedField,
+                                kind: TrackKind.Railway,
+                                orientation
+                            })
+                        }
+                        this.buttonsList.appendChild(variantButton)
+                    }
+                })
+            }
+
+            asyncSetButtons()
         }
 
         this.appendChild(this.styleEl)
     }
 
     override changed(): void {
-        const getListOfBuildingsPossibleToBuild = async () => {
-            const address = this.props.selectedField;
-            if (address) {
-                const buildingsToBuild: Array<BuildingKind> = [];
-                for (const buildingKind of Object.values(BuildingKind)) {
-                    const canBuild = await BuildingUtils.canBuild({
-                        address,
-                        buildingKind,
-                        options: undefined
-                    });
-                    if (canBuild) {
-                        buildingsToBuild.push(buildingKind);
-                    }
-                }
-                this.setState({
-                    buildingsToBuild
-                })
-            }
-        }
 
-        getListOfBuildingsPossibleToBuild()
     }
 
     override mounted(): void {

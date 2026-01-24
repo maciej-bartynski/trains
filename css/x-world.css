@@ -1,3 +1,14 @@
+x-world {
+    display: block;
+    position: relative;
+    border: solid 1px darkgreen;
+    overflow: hidden;
+    width: 500px;
+    height: 500px;
+    margin: auto;
+    overflow: auto;
+}
+
 .x-world_frame {
     display: block;
     position: relative;
