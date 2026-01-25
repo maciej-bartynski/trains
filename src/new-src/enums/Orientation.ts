@@ -40,45 +40,14 @@ type WithCenterTrackOrientation = {
 
 type Orientation = TrespassingTrackOrientation | WithCenterTrackOrientation
 
-const station: Orientation = {
-    [Direction.Top]: {
-        [Direction.Bottom]: false,
-        [Direction.Right]: false,
-        [Direction.Left]: false,
-        'center': true
-    },
-    [Direction.Right]: {
-        [Direction.Bottom]: false,
-        [Direction.Left]: false,
-        [Direction.Top]: false,
-        'center': true
-    },
-    [Direction.Bottom]: null,
-    [Direction.Left]: null,
-    'center': {
-        [Direction.Top]: true,
-        [Direction.Bottom]: false,
-        [Direction.Left]: false,
-        [Direction.Right]: true,
-    }
-}
-
-const no_station: Orientation = {
-    [Direction.Top]: null,
-    [Direction.Right]: {
-        [Direction.Bottom]: false,
-        [Direction.Left]: true,
-        [Direction.Top]: false,
-        'center': false
-    },
-    [Direction.Bottom]: null,
-    [Direction.Left]: {
-        [Direction.Bottom]: false,
-        [Direction.Top]: false,
-        [Direction.Right]: true,
-        'center': false
-    },
-    'center': null
-}
-
 export default Orientation;
+
+type TrackNode = Direction | 'center';
+type TrackNodeConnections = Partial<Record<TrackNode, boolean>>;
+type OrientationGeneral = Record<TrackNode, TrackNodeConnections | null>;
+
+export type {
+    TrackNode,
+    TrackNodeConnections,
+    OrientationGeneral
+}

@@ -1,7 +1,6 @@
 import Direction, { OpositeDirection } from "../enums/Direction.js";
 import TrackKind from "../enums/TrackKind.js";
 import StatefullElement from "../framework/StatefullElement.js";
-import BuildingModel from "../models/BuildingModel.js";
 import TrackModel from "../models/TrackModel.js";
 
 class TrackElement extends StatefullElement<{}, TrackModel['state']> {
@@ -26,19 +25,19 @@ class TrackElement extends StatefullElement<{}, TrackModel['state']> {
 
     private trackStraight = (() => {
         const el = document.createElement('div');
-        el.classList.add(`${TrackElement.tagName}_track-stright`);
+        // el.classList.add(`${TrackElement.tagName}_track-stright`);
         return el;
     })();
 
     private trackCenter = (() => {
         const el = document.createElement('div');
-        el.classList.add(`${TrackElement.tagName}_track-center`);
+        // el.classList.add(`${TrackElement.tagName}_track-center`);
         return el;
     })();
 
     private trackCurve = (() => {
         const el = document.createElement('div');
-        el.classList.add(`${TrackElement.tagName}_track-curve`);
+        // el.classList.add(`${TrackElement.tagName}_track-curve`);
         return el;
     })();
 
@@ -92,7 +91,7 @@ class TrackElement extends StatefullElement<{}, TrackModel['state']> {
                     if (directionFromCenter) {
                         const trackElement = this.trackCenter.cloneNode(true) as HTMLDivElement;
                         trackElement.classList.add(`--${directionFromCenter.toLowerCase()}`);
-                        layerElement.appendChild(this.trackCenter)
+                        layerElement.appendChild(trackElement)
                     }
                 } else {
                     /** Any other orientation */

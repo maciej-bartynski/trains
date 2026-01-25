@@ -1,6 +1,6 @@
 import BuildingKind from "../enums/BuildingKind.js";
 import Direction from "../enums/Direction.js";
-import Orientation from "../enums/Orientation.js";
+import Orientation, { OrientationGeneral } from "../enums/Orientation.js";
 import TrackKind from "../enums/TrackKind.js";
 import DB from "../framework/DbService.js";
 import State from "../framework/State.js";
@@ -10,6 +10,7 @@ import Address from "../types/Address.js";
 import AddressUtils from "../utils/AddressUtils.js";
 import AdjacentFields from "../utils/AdjacentFields.js";
 import BuildingUtils from "../utils/BuildingUtils.js";
+import OrientationUtils from "../utils/OrientationUtils.js";
 import TrackUtils from "../utils/TrackUtils.js";
 import PieceEnum, { BoardState, SetupState } from "./BoardModel.type.js";
 import BuildingModel from "./BuildingModel.js";
@@ -311,34 +312,25 @@ class BoardModel {
         if (canBuild) {
             const { tracks } = this.getStateByAddress(address) ?? {};
 
-            const existingTracks: Record<TrackKind, Orientation | null> = tracks?.state.orientations ?? {} as Record<TrackKind, Orientation | null>;
+            let existingTracks: Record<TrackKind, Orientation | null> = tracks?.state.orientations ?? {
+                [TrackKind.Railway]: null,
+                [TrackKind.Road]: null,
+                [TrackKind.Sail]: null,
+                [TrackKind.Fly]: null,
+            };
 
-            const mergedOrientations = Object.values(TrackKind)
-                .reduce((result, kindName, id, self) => {
-                    if (kindName === params.kind) {
+            const toBeUpdatedKind = existingTracks[params.kind];
 
-                        let mergedOrientation = Object.assign({}, params.orientation);
-
-                        for (const direction in params.orientation) {
-                            if (!params.orientation[direction as Direction]) {
-                                delete mergedOrientation[direction as Direction];
-                            }
-                        }
-
-                        result[kindName] = existingTracks[kindName] ? {
-                            ...existingTracks[kindName],
-                            ...mergedOrientation
-                        } : params.orientation;
-                    } else {
-                        result[kindName] = existingTracks[kindName] ?? null;
+            if (!toBeUpdatedKind) {
+                existingTracks[params.kind] = params.orientation
+            } else {
+                existingTracks = OrientationUtils.mergeOrientations({
+                    orientations: existingTracks,
+                    orientationsUpdate: {
+                        [params.kind]: params.orientation
                     }
-                    return result;
-                }, {
-                    [TrackKind.Railway]: null,
-                    [TrackKind.Road]: null,
-                    [TrackKind.Sail]: null,
-                    [TrackKind.Fly]: null,
-                } as Record<TrackKind, Orientation | null>);
+                });
+            }
 
             let model = this.state[PieceEnum.Tracks].get(key);
 
@@ -346,10 +338,10 @@ class BoardModel {
                 this.state[PieceEnum.Tracks].set(key, new TrackModel({
                     _id: key,
                     address,
-                    orientations: mergedOrientations
+                    orientations: existingTracks//mergedOrientations
                 }));
             } else {
-                model.updateOrientation(mergedOrientations)
+                model.updateOrientation(existingTracks)//mergedOrientations)
             }
 
             this._notifyListeners(PieceEnum.Tracks);
