@@ -2,8 +2,36 @@ import TerrainKind from "../enums/TerrainKind.js";
 import BoardModel from "../models/BoardModel.js";
 import Address from "../types/Address.js";
 import BuildingKind from "../enums/BuildingKind.js";
+import TrackUtils from "./TrackUtils.js";
+import TrackKind from "../enums/TrackKind.js";
 
-export async function canBuildRailwayStation(address: Address, game: BoardModel) {
+export function canBuildRailwayStation(address: Address, game: BoardModel) {
+    const {
+        field,
+        buildings,
+        tracks
+    } = game.getStateByAddress(address) ?? {};
+
+    if (buildings) {
+        return false;
+    }
+
+    if ([TerrainKind.Water, TerrainKind.WaterCold, undefined, null].includes(field?.state.terrain)) {
+        return false;
+    }
+
+    if (
+        TrackUtils.isTrackCenter(TrackKind.Railway, address, game) ||
+        TrackUtils.isTrackStraight(TrackKind.Railway, address, game) ||
+        TrackUtils.isTrackCross(TrackKind.Railway, address, game)
+    ) {
+        return true;
+    }
+
+    return false;
+}
+
+export function canBuildRailwayGarage(address: Address, game: BoardModel) {
     const {
         field,
         buildings
@@ -17,27 +45,14 @@ export async function canBuildRailwayStation(address: Address, game: BoardModel)
         return false;
     }
 
-    return true;
-}
-
-export async function canBuildRailwayGarage(address: Address, game: BoardModel) {
-    const {
-        field,
-        buildings
-    } = game.getStateByAddress(address) ?? {};
-
-    if (buildings) {
-        return false;
+    if (TrackUtils.isTrackCenter(TrackKind.Railway, address, game)) {
+        return true;
     }
 
-    if ([TerrainKind.Water, TerrainKind.WaterCold, undefined, null].includes(field?.state.terrain)) {
-        return false;
-    }
-
-    return true;
+    return false;
 }
 
-export async function canBuildWoodFactory(address: Address, game: BoardModel) {
+export function canBuildWoodFactory(address: Address, game: BoardModel) {
     const {
         field,
         buildings
@@ -51,10 +66,10 @@ export async function canBuildWoodFactory(address: Address, game: BoardModel) {
         return false;
     }
 
-    return true;
+    return TrackUtils.isTrackStraight(TrackKind.Railway, address, game);
 }
 
-export async function canBuildStoneFactory(address: Address, game: BoardModel) {
+export function canBuildStoneFactory(address: Address, game: BoardModel) {
     const {
         field,
         buildings
@@ -68,10 +83,10 @@ export async function canBuildStoneFactory(address: Address, game: BoardModel) {
         return false;
     }
 
-    return true;
+    return TrackUtils.isTrackStraight(TrackKind.Railway, address, game);
 }
 
-export async function canBuildClayFactory(address: Address, game: BoardModel) {
+export function canBuildClayFactory(address: Address, game: BoardModel) {
     const {
         field,
         buildings
@@ -85,10 +100,10 @@ export async function canBuildClayFactory(address: Address, game: BoardModel) {
         return false;
     }
 
-    return true;
+    return TrackUtils.isTrackStraight(TrackKind.Railway, address, game);
 }
 
-export async function canBuildCoalFactory(address: Address, game: BoardModel) {
+export function canBuildCoalFactory(address: Address, game: BoardModel) {
     const {
         field,
         buildings
@@ -102,10 +117,10 @@ export async function canBuildCoalFactory(address: Address, game: BoardModel) {
         return false;
     }
 
-    return true;
+    return TrackUtils.isTrackStraight(TrackKind.Railway, address, game);
 }
 
-export async function canBuildIronFactory(address: Address, game: BoardModel) {
+export function canBuildIronFactory(address: Address, game: BoardModel) {
     const {
         field,
         buildings
@@ -119,10 +134,10 @@ export async function canBuildIronFactory(address: Address, game: BoardModel) {
         return false;
     }
 
-    return true;
+    return TrackUtils.isTrackStraight(TrackKind.Railway, address, game);
 }
 
-export async function canBuildBuildingMaterialsFactory(address: Address, game: BoardModel) {
+export function canBuildBuildingMaterialsFactory(address: Address, game: BoardModel) {
     const {
         field,
         buildings
@@ -135,13 +150,13 @@ export async function canBuildBuildingMaterialsFactory(address: Address, game: B
     if (!field || !field.state.terrain) return false;
 
     if ([TerrainKind.Plain, TerrainKind.Desert, TerrainKind.Ice].includes(field.state.terrain)) {
-        return true;
+        return TrackUtils.isTrackStraight(TrackKind.Railway, address, game);
     }
 
-    return false;
+    return false
 }
 
-export async function canBuildSteelFactory(address: Address, game: BoardModel) {
+export function canBuildSteelFactory(address: Address, game: BoardModel) {
     const {
         field,
         buildings
@@ -154,13 +169,13 @@ export async function canBuildSteelFactory(address: Address, game: BoardModel) {
     if (!field || !field.state.terrain) return false;
 
     if ([TerrainKind.Plain, TerrainKind.Desert].includes(field.state.terrain)) {
-        return true;
+        return TrackUtils.isTrackStraight(TrackKind.Railway, address, game);
     }
 
     return false;
 }
 
-export async function canBuildFuelFactory(address: Address, game: BoardModel) {
+export function canBuildFuelFactory(address: Address, game: BoardModel) {
     const {
         field,
         buildings
@@ -174,10 +189,10 @@ export async function canBuildFuelFactory(address: Address, game: BoardModel) {
     if (!field || !field.state.terrain) return false;
 
     if ([TerrainKind.Ice, TerrainKind.Desert].includes(field.state.terrain)) {
-        return true;
+        return TrackUtils.isTrackStraight(TrackKind.Railway, address, game);
     }
 
-    return false;
+    return false
 }
 
 type CanBuildParams = {
@@ -188,26 +203,27 @@ type CanBuildParams = {
 
 interface buildingUtils {
     game?: BoardModel;
-    canBuild(params: CanBuildParams): Promise<boolean>;
-    canBuildRailwayStation(address: Address, game: BoardModel): Promise<boolean>;
-    canBuildRailwayGarage(address: Address, game: BoardModel): Promise<boolean>;
-    canBuildWoodFactory(address: Address, game: BoardModel): Promise<boolean>;
-    canBuildIronFactory(address: Address, game: BoardModel): Promise<boolean>;
-    canBuildCoalFactory(address: Address, game: BoardModel): Promise<boolean>;
-    canBuildStoneFactory(address: Address, game: BoardModel): Promise<boolean>;
-    canBuildClayFactory(address: Address, game: BoardModel): Promise<boolean>;
-    canBuildBuildingMaterialsFactory(address: Address, game: BoardModel): Promise<boolean>;
-    canBuildFuelFactory(address: Address, game: BoardModel): Promise<boolean>;
-    canBuildSteelFactory(address: Address, game: BoardModel): Promise<boolean>;
+    canBuild(params: CanBuildParams): boolean;
+    canBuildRailwayStation(address: Address, game: BoardModel): boolean;
+    canBuildRailwayGarage(address: Address, game: BoardModel): boolean;
+    canBuildWoodFactory(address: Address, game: BoardModel): boolean;
+    canBuildIronFactory(address: Address, game: BoardModel): boolean;
+    canBuildCoalFactory(address: Address, game: BoardModel): boolean;
+    canBuildStoneFactory(address: Address, game: BoardModel): boolean;
+    canBuildClayFactory(address: Address, game: BoardModel): boolean;
+    canBuildBuildingMaterialsFactory(address: Address, game: BoardModel): boolean;
+    canBuildFuelFactory(address: Address, game: BoardModel): boolean;
+    canBuildSteelFactory(address: Address, game: BoardModel): boolean;
 }
 
 const BuildingUtils: buildingUtils = {
-    async canBuild({
+    canBuild({
         address,
         buildingKind,
     }: CanBuildParams) {
-        if (!this.game) return false;
-        await this.game.configured;
+        if (!this.game) {
+            throw new Error('BuildingUtils: Attempt to use utils before game is set.');
+        }
 
         switch (buildingKind) {
             // train buildings
@@ -217,6 +233,7 @@ const BuildingUtils: buildingUtils = {
             case BuildingKind.RailwayGarage: {
                 return this.canBuildRailwayGarage(address, this.game);
             }
+
             // raw materials buildings
             case BuildingKind.WoodFactory: {
                 return this.canBuildWoodFactory(address, this.game);
@@ -233,6 +250,7 @@ const BuildingUtils: buildingUtils = {
             case BuildingKind.StoneFactory: {
                 return this.canBuildStoneFactory(address, this.game);
             }
+
             //advanced materials factory
             case BuildingKind.BuildingMaterialsFactory: {
                 return this.canBuildBuildingMaterialsFactory(address, this.game);

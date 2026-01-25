@@ -109,11 +109,18 @@ const mergeOrientations = (params: {
     return mergedOrientations;
 }
 
+const OpositeDirections = {
+    [Direction.Bottom]: Direction.Top,
+    [Direction.Left]: Direction.Right,
+    [Direction.Top]: Direction.Bottom,
+    [Direction.Right]: Direction.Left,
+}
 
 const OrientationUtils = {
     mergeConnections,
     mergeOrientations,
-    mergeOrientationOfSameKind
+    mergeOrientationOfSameKind,
+    OpositeDirections
 }
 
 export default OrientationUtils;

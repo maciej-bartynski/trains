@@ -56,7 +56,8 @@ class BuildingElement extends StatefullElement<{
         this.style.left = `${50 * address.column}px`;
         this.style.top = `${50 * address.row}px`;
         this.innerText = kind;
-        let color = ''
+        let color = '';
+
         switch (this.props.kind) {
             case BuildingKind.RailwayGarage: {
                 color = 'gray'

@@ -2,100 +2,9 @@ import TerrainKind from "../enums/TerrainKind.js";
 import BoardModel from "../models/BoardModel.js";
 import Address from "../types/Address.js";
 import TrackKind from "../enums/TrackKind.js";
-import Orientation from "../enums/Orientation.js";
+import Orientation, { OrientationGeneral, TrackNode, TrackNodeConnections } from "../enums/Orientation.js";
 import Direction from "../enums/Direction.js";
-
-// export function canBuildRailwayTrack(
-//     address: Address,
-//     game: BoardModel,
-//     trackKind: TrackKind,
-//     options: {
-//         orientations: Orientation
-//     }) {
-
-//     const {
-//         field,
-//         buildings,
-//         tracks,
-//     } = game.getStateByAddress(address) ?? {};
-
-//     if (buildings || !field?.state.terrain) {
-//         return false;
-//     }
-
-//     if ([TerrainKind.Water, TerrainKind.WaterCold].includes(field.state.terrain)) {
-//         return false;
-//     }
-
-//     type TrackNode = Direction | 'center';
-
-//     const getOccupiedNodes = (orientation?: Orientation | null): Set<TrackNode> => {
-//         const occupied = new Set<TrackNode>();
-//         if (!orientation) return occupied;
-
-//         if (orientation.center) {
-//             occupied.add('center');
-//             Object.entries(orientation.center).forEach(([dir, isConnected]) => {
-//                 if (isConnected) occupied.add(dir as Direction);
-//             });
-//         }
-
-//         Object.entries(orientation).forEach(([node, connections]) => {
-//             if (node === 'center' || !connections) return;
-//             const hasConnection = Object.values(connections).some(Boolean);
-//             if (hasConnection) occupied.add(node as Direction);
-//             if ((connections as Record<string, boolean>)['center']) occupied.add('center');
-//         });
-
-//         return occupied;
-//     };
-
-//     const isSubset = (subset: Set<TrackNode>, superset: Set<TrackNode>) => {
-//         for (const v of subset) {
-//             if (!superset.has(v)) return false;
-//         }
-//         return true;
-//     };
-
-//     const newNodes = getOccupiedNodes(options.orientations);
-//     const existingOrientations = tracks?.state.orientations ?? {};
-
-//     const existingNodesByKind = Object.entries(existingOrientations).reduce<Record<string, Set<TrackNode>>>(
-//         (acc, [kind, orientation]) => {
-//             acc[kind] = getOccupiedNodes(orientation as Orientation | null);
-//             return acc;
-//         },
-//         {}
-//     );
-
-//     const hasAnyExistingTrack = Object.values(existingNodesByKind).some(nodes => nodes.size > 0);
-//     const anyExistingCenter = Object.values(existingNodesByKind).some(nodes => nodes.has('center'));
-
-//     // Center always occupies whole field.
-//     if (newNodes.has('center')) {
-//         return !hasAnyExistingTrack;
-//     }
-
-//     // If something already uses center, nothing else can be built.
-//     if (anyExistingCenter) {
-//         return false;
-//     }
-
-//     // Duplicate if all new nodes already occupied by SAME track kind (new ⊆ existing).
-//     const sameKindNodes = existingNodesByKind[trackKind];
-//     if (sameKindNodes && isSubset(newNodes, sameKindNodes)) {
-//         return false;
-//     }
-
-//     // Different track kinds cannot share any node.
-//     for (const [existingKind, existingNodes] of Object.entries(existingNodesByKind)) {
-//         if (existingKind === trackKind) continue;
-//         const overlaps = [...newNodes].some(node => existingNodes.has(node));
-//         if (overlaps) return false;
-//     }
-
-//     return true;
-// }
+import OrientationUtils from "./OrientationUtils.js";
 
 export function canBuildRailwayTrack(
     address: Address,
@@ -347,7 +256,6 @@ const TrackVariantBL = {
         'center': null,
     }
 }
-
 const TrackVariantLT = {
     variant: TrackVariantName.LeftTop,
     orientation: {
@@ -428,7 +336,6 @@ const TrackVariantCenterBottom = {
         }
     }
 }
-
 const TrackVariantCenterLeft = {
     variant: TrackVariantName.CenterLeft,
     orientation: {
@@ -463,9 +370,205 @@ const TrackVariants = {
     TrackVariantCenterLeft,
 }
 
+function isTrackCross(kind: TrackKind, address: Address, game: BoardModel): boolean {
+    const data = game.getStateByAddress(address);
+    if (!data) {
+        return false;
+    }
+
+    const track = data.tracks?.state.orientations[kind];
+
+    if (!track) {
+        return false;
+    }
+
+    const otherKindsNotExist = Object.values(TrackKind).every(trackKind => {
+        if (trackKind === kind) {
+            return true;
+        }
+        const notExist = !(data.tracks?.state.orientations[trackKind]);
+        return notExist;
+    });
+
+    if (!otherKindsNotExist) {
+        return false;
+    }
+
+    if (track.center) {
+        return false;
+    }
+
+    const edges = new Set<string>();
+    const addEdge = (a: TrackNode, b: TrackNode) => {
+        const key = [a, b].sort().join('|');
+        edges.add(key);
+    };
+
+    Object.entries(track as OrientationGeneral).forEach(directionConnection => {
+        const [direction, connections] = directionConnection as [TrackNode, TrackNodeConnections | null];
+        if (direction === 'center' || !connections) {
+            return;
+        }
+        Object.entries(connections).forEach(entry => {
+            const [connectedDirection, isConnected] = entry as [TrackNode, boolean];
+            if (!isConnected || connectedDirection === 'center') {
+                return;
+            }
+            addEdge(direction, connectedDirection);
+        });
+    });
+
+    const hasVertical = edges.has([Direction.Top, Direction.Bottom].sort().join('|'));
+    const hasHorizontal = edges.has([Direction.Left, Direction.Right].sort().join('|'));
+
+    return hasVertical && hasHorizontal;
+}
+
+function isTrackStraight(kind: TrackKind, address: Address, game: BoardModel) {
+    const data = game.getStateByAddress(address);
+    if (!data) {
+        return false;
+    }
+
+    const track = data.tracks?.state.orientations[kind];
+
+    if (!track) {
+        return false;
+    }
+
+    const otherKindsNotExist = Object.values(TrackKind).every(trackKind => {
+        if (trackKind === kind) {
+            return true;
+        }
+        const notExist = !(data.tracks?.state.orientations[trackKind]);
+        return notExist;
+    });
+
+    const otherKindsExist = !otherKindsNotExist;
+
+    if (otherKindsExist) {
+        return false;
+    }
+
+    let firstFound: TrackNode | null = null;
+    let secondFound: TrackNode | null = null;
+
+    for (const _dir in track as OrientationGeneral) {
+        const direction = _dir as TrackNode;
+        const connections = track[direction] as null | Record<TrackNode, boolean>;
+
+        if (direction === 'center' && connections) {
+            break;
+        } else if (direction === 'center') {
+            continue;
+        } else if (!connections) {
+            continue;
+        }
+
+        let connectedDirection: TrackNode | null = null;
+
+        const connectionsAmount = Object.entries(connections).filter(entry => {
+            const [dir, conn] = entry as [TrackNode, boolean];
+            const connected = dir !== 'center' && conn;
+            if (connected) {
+                connectedDirection = dir;
+                return true;
+            }
+            return false
+        }).length;
+
+        if (connectionsAmount > 1) {
+            break;
+        }
+
+        if (direction && connectedDirection && OrientationUtils.OpositeDirections[direction] === connectedDirection) {
+            firstFound = direction;
+            secondFound = connectedDirection;
+            break;
+        }
+    }
+
+    if (!firstFound || !secondFound) {
+        return false;
+    }
+
+    return Object.entries(track).every(entry => {
+        const [key, value] = entry as [TrackNode, TrackNodeConnections | null];
+
+        if (key === 'center') {
+            return value
+                ? Object.values(value).filter(bool => bool).length === 0
+                : true;
+        }
+
+        if (key === firstFound || key === secondFound) {
+            return value ? Object.values(value).filter(bool => bool).length === 1 : false;
+        }
+
+        return value ? Object.values(value).filter(bool => bool).length === 0 : true;
+    })
+}
+
+function isTrackCenter(kind: TrackKind, address: Address, game: BoardModel) {
+    const data = game.getStateByAddress(address);
+    if (!data) {
+        return false;
+    }
+
+    const track = data.tracks?.state.orientations[kind];
+
+    if (!track) {
+        return false;
+    }
+
+    const otherKindsNotExist = Object.values(TrackKind).every(trackKind => {
+        if (trackKind === kind) {
+            return true;
+        }
+        const notExist = !(data.tracks?.state.orientations[trackKind]);
+        return notExist;
+    });
+
+    const otherKindsExist = !otherKindsNotExist;
+
+    if (otherKindsExist) {
+        return false;
+    }
+
+    if (!track.center) {
+        return false;
+    }
+
+    let centerEdges = 0;
+    let nonCenterEdges = 0;
+
+    Object.entries(track as OrientationGeneral).forEach(connectionEntry => {
+        const [key, value] = connectionEntry as [TrackNode, TrackNodeConnections | null];
+        if (key === 'center' || !value) {
+            return;
+        }
+        Object.entries(value).forEach(entry => {
+            const [connectedDirection, isConnected] = entry as [TrackNode, boolean];
+            if (!isConnected) {
+                return;
+            }
+            if (connectedDirection === 'center') {
+                centerEdges += 1;
+            } else {
+                nonCenterEdges += 1;
+            }
+        });
+    });
+
+    return centerEdges === 1 && nonCenterEdges === 0;
+}
+
 interface trackUtils {
     TrackVariants: typeof TrackVariants;
     game?: BoardModel;
+    isTrackCross(kind: TrackKind, address: Address, game: BoardModel): boolean;
+    isTrackCenter(kind: TrackKind, address: Address, game: BoardModel): boolean;
+    isTrackStraight(kind: TrackKind, address: Address, game: BoardModel): boolean;
     canBuild(params: CanBuildParams): boolean;
     canBuildRailwayTrack(address: Address, game: BoardModel, trackKind: TrackKind, options: { orientations: Orientation }): boolean;
 }
@@ -491,6 +594,9 @@ const TrackUtils: trackUtils = {
         }
     },
     canBuildRailwayTrack,
+    isTrackCross,
+    isTrackCenter,
+    isTrackStraight,
     TrackVariants
 }
 

@@ -3,7 +3,11 @@ import StatefullElement from "../framework/StatefullElement.js";
 import BoardModel from "../models/BoardModel.js";
 import PieceEnum from "../models/BoardModel.type.js";
 import BuildingModel from "../models/BuildingModel.js";
+import { BuildingState } from "../models/BuildingModel.type.js";
 import FieldModel from "../models/FieldModel.js";
+import { FieldState } from "../models/FieldModel.type.js";
+import TrackModel from "../models/TrackModel.js";
+import { TrackState } from "../models/TrackModel.type.js";
 import Address from "../types/Address.js";
 import BuildingUtils from "../utils/BuildingUtils.js";
 
@@ -13,7 +17,10 @@ type FieldMenuState = {
 
 type FieldMenuProps = {
     selectedField: Address | null;
-} & FieldModel['state'] & (BuildingModel['state'] | null)
+    field: FieldModel['state'];
+    building: BuildingModel['state'] | null;
+    tracks: TrackModel['state'] | null
+}
 
 class FieldMenuElement extends StatefullElement<FieldMenuState, FieldMenuProps> {
 
@@ -34,6 +41,21 @@ class FieldMenuElement extends StatefullElement<FieldMenuState, FieldMenuProps> 
     constructor() {
         super();
         this.subscribeBoardModel = this.subscribeBoardModel.bind(this);
+        this.subscribeBuildings = this.subscribeBuildings.bind(this);
+        this.subscribeTracks = this.subscribeTracks.bind(this);
+        this.subscribeField = this.subscribeField.bind(this);
+    }
+
+    private subscribeField(params: FieldState) {
+        this.setProps({ field: params });
+    }
+
+    private subscribeBuildings(params: BuildingState) {
+        this.setProps({ building: params });
+    }
+
+    private subscribeTracks(params: TrackState) {
+        this.setProps({ tracks: params });
     }
 
     private subscribeBoardModel() {
@@ -43,14 +65,16 @@ class FieldMenuElement extends StatefullElement<FieldMenuState, FieldMenuProps> 
 
         if (previousSelectedField) {
             const prevFieldData = game.getStateByAddress(previousSelectedField);
-            prevFieldData?.field.unsubscribe(this.setProps);
-            prevFieldData?.buildings?.unsubscribe(this.setProps)
+            prevFieldData?.field.unsubscribe(this.subscribeField);
+            prevFieldData?.buildings?.unsubscribe(this.subscribeBuildings)
+            prevFieldData?.tracks?.unsubscribe(this.subscribeTracks)
         }
 
         if (selectedField) {
             const currFieldData = game.getStateByAddress(selectedField);
-            currFieldData?.field.subscribe(this.setProps);
-            currFieldData?.buildings?.subscribe(this.setProps);
+            currFieldData?.field.subscribe(this.subscribeField);
+            currFieldData?.buildings?.subscribe(this.subscribeBuildings);
+            currFieldData?.tracks?.subscribe(this.subscribeTracks);
         }
 
         this.setProps({
@@ -79,8 +103,6 @@ class FieldMenuElement extends StatefullElement<FieldMenuState, FieldMenuProps> 
 
     override render({
         selectedField,
-        kind,
-        terrain,
     }: FieldMenuProps) {
 
         this.buttonsList.innerHTML = '';
@@ -102,12 +124,12 @@ class FieldMenuElement extends StatefullElement<FieldMenuState, FieldMenuProps> 
     }
 
     override changed(): void {
-        const getListOfBuildingsPossibleToBuild = async () => {
+        const getListOfBuildingsPossibleToBuild = () => {
             const address = this.props.selectedField;
             if (address) {
                 const buildingsToBuild: Array<BuildingKind> = [];
                 for (const buildingKind of Object.values(BuildingKind)) {
-                    const canBuild = await BuildingUtils.canBuild({
+                    const canBuild = BuildingUtils.canBuild({
                         address,
                         buildingKind,
                         options: undefined
