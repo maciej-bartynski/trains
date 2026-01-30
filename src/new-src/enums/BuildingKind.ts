@@ -1,8 +1,10 @@
 enum BuildingKind {
     // train buildings
     RailwayStation = 'railway-station',
-    // RailwayTrack = 'railway-track',
     RailwayGarage = 'railway-garage',
+
+    // ship buildings
+    Harbour = 'harbour',
 
     // factories: raw resources
     WoodFactory = 'wood-factory',

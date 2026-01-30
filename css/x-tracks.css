@@ -15,97 +15,111 @@ x-track {
     display: block;
 }
 
+.x-track_layer-railway {
+    --track-width: 6px;
+    --track-offset: 22px;
+    --track-curvature: 28px;
+    --track-color: rgb(120, 18, 45);
+}
+
+.x-track_layer-road {
+    --track-width: 12px;
+    --track-offset: 19px;
+    --track-curvature: 31px;
+    --track-color: black;
+}
+
 .x-track_to-center {
     width: 25px;
-    height: 6px;
-    background-color: black;
+    height: var(--track-width);
+    background-color: var(--track-color);
     position: absolute;
 }
 
 .x-track_to-center.--top {
-    width: 6px;
+    width: var(--track-width);
     height: 25px;
     top: 0;
-    left: 22px;
+    left: var(--track-offset);
 }
 
 .x-track_to-center.--right {
-    height: 6px;
+    height: var(--track-width);
     width: 25px;
-    top: 22px;
+    top: var(--track-offset);
     left: 25px;
 }
 
 .x-track_to-center.--bottom {
-    width: 6px;
+    width: var(--track-width);
     height: 25px;
     top: 25px;
-    left: 22px;
+    left: var(--track-offset);
 }
 
 .x-track_to-center.--left {
-    height: 6px;
+    height: var(--track-width);
     width: 25px;
-    top: 22px;
+    top: var(--track-offset);
     left: 0px;
 }
 
 .x-track_straight {
     width: 50px;
-    height: 6px;
-    background-color: black;
+    height: var(--track-width);
+    background-color: var(--track-color);
     position: absolute;
 }
 
 .x-track_straight.--horizontal {
     width: 50px;
-    height: 6px;
+    height: var(--track-width);
     left: 0;
-    top: 22px;
+    top: var(--track-offset);
 }
 
 .x-track_straight.--vertical {
-    width: 6px;
+    width: var(--track-width);
     height: 50px;
-    left: 22px;
+    left: var(--track-offset);
     top: 0px;
 }
 
 .x-track_curve {
-    width: 28px;
-    height: 28px;
+    width: var(--track-curvature);
+    height: var(--track-curvature);
     position: absolute;
     border-radius: 0;
 }
 
 .x-track_curve.--top-right {
-    border-bottom: solid 6px black;
-    border-left: solid 6px black;
-    border-bottom-left-radius: 25px;
+    border-bottom: solid var(--track-width) var(--track-color);
+    border-left: solid var(--track-width) var(--track-color);
+    border-bottom-left-radius: var(--track-curvature);
     top: 0;
     right: 0;
 }
 
 .x-track_curve.--right-bottom {
-    border-top: solid 6px black;
-    border-left: solid 6px black;
-    border-top-left-radius: 25px;
+    border-top: solid var(--track-width) var(--track-color);
+    border-left: solid var(--track-width) var(--track-color);
+    border-top-left-radius: var(--track-curvature);
     bottom: 0;
     right: 0;
 }
 
 .x-track_curve.--bottom-left {
-    border-top: solid 6px black;
-    border-right: solid 6px black;
-    border-top-right-radius: 25px;
+    border-top: solid var(--track-width) var(--track-color);
+    border-right: solid var(--track-width) var(--track-color);
+    border-top-right-radius: var(--track-curvature);
     bottom: 0;
     left: 0;
 }
 
 .x-track_curve.--left-top {
-    border-bottom: solid 6px black;
-    border-right: solid 6px black;
-    border-bottom-right-radius: 25px;
+    border-bottom: solid var(--track-width) var(--track-color);
+    border-right: solid var(--track-width) var(--track-color);
+    border-bottom-right-radius: var(--track-curvature);
     left: 0;
     top: 0;
 }

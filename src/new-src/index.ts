@@ -8,6 +8,7 @@ import DB from "./framework/DbService.js";
 import WorldElement from "./elements/WorldElement.js";
 import MenuBuildRailway from "./elements/MenuBuildRailway.js";
 import TrackElement from "./elements/TrackElement.js";
+import MenuBuildRoad from "./elements/MenuBuildRoad.js";
 
 // indexedDB.deleteDatabase('game');
 
@@ -15,6 +16,7 @@ customElements.define(FieldElement.tagName, FieldElement);
 customElements.define(BuildingElement.tagName, BuildingElement);
 customElements.define(FieldMenuElement.tagName, FieldMenuElement);
 customElements.define(MenuBuildRailway.tagName, MenuBuildRailway);
+customElements.define(MenuBuildRoad.tagName, MenuBuildRoad);
 customElements.define(WorldElement.tagName, WorldElement);
 customElements.define(TrackElement.tagName, TrackElement);
 
@@ -31,6 +33,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const worldElement = WorldElement.createElement();
     const fieldMenuElement = document.createElement(FieldMenuElement.tagName);
     const menuBuildRailway = document.createElement(MenuBuildRailway.tagName);
+    const menuBuildRoad = document.createElement(MenuBuildRoad.tagName);
 
     resetGameBtn.onclick = async () => {
         GameInstance.unsubscribePiece(gameSub)
@@ -44,6 +47,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.body.appendChild(resetGameBtn);
     document.body.appendChild(fieldMenuElement);
     document.body.appendChild(menuBuildRailway);
+    document.body.appendChild(menuBuildRoad);
     document.body.appendChild(worldElement);
 
     document.oncontextmenu = (e => {

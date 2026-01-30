@@ -67,6 +67,10 @@ class BuildingElement extends StatefullElement<{
                 color = 'black'
                 break;
             }
+            case BuildingKind.Harbour: {
+                color = 'pink'
+                break;
+            }
 
             // raw materials production
             case BuildingKind.WoodFactory: {

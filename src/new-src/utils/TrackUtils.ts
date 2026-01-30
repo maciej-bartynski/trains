@@ -6,7 +6,7 @@ import Orientation, { OrientationGeneral, TrackNode, TrackNodeConnections } from
 import Direction from "../enums/Direction.js";
 import OrientationUtils from "./OrientationUtils.js";
 
-export function canBuildRailwayTrack(
+export function canBuildLandTrack(
     address: Address,
     game: BoardModel,
     trackKind: TrackKind,
@@ -85,7 +85,7 @@ export function canBuildRailwayTrack(
 
     const newNodes = getOccupiedNodes(options.orientations);
     const newEdges = getEdges(options.orientations);
-    const existingOrientations = tracks?.state.orientations ?? {};
+    const existingOrientations = Object.assign({}, tracks?.state.orientations ?? {});
 
     const existingNodesByKind = Object.entries(existingOrientations).reduce<Record<string, Set<TrackNode>>>(
         (acc, [kind, orientation]) => {
@@ -570,7 +570,7 @@ interface trackUtils {
     isTrackCenter(kind: TrackKind, address: Address, game: BoardModel): boolean;
     isTrackStraight(kind: TrackKind, address: Address, game: BoardModel): boolean;
     canBuild(params: CanBuildParams): boolean;
-    canBuildRailwayTrack(address: Address, game: BoardModel, trackKind: TrackKind, options: { orientations: Orientation }): boolean;
+    canBuildLandTrack(address: Address, game: BoardModel, trackKind: TrackKind, options: { orientations: Orientation }): boolean;
 }
 
 const TrackUtils: trackUtils = {
@@ -584,7 +584,11 @@ const TrackUtils: trackUtils = {
         switch (trackKind) {
 
             case TrackKind.Railway: {
-                return this.canBuildRailwayTrack(address, this.game, trackKind, options);
+                return this.canBuildLandTrack(address, this.game, trackKind, options);
+            }
+
+            case TrackKind.Road: {
+                return this.canBuildLandTrack(address, this.game, trackKind, options);
             }
 
             default: {
@@ -593,7 +597,7 @@ const TrackUtils: trackUtils = {
 
         }
     },
-    canBuildRailwayTrack,
+    canBuildLandTrack,
     isTrackCross,
     isTrackCenter,
     isTrackStraight,

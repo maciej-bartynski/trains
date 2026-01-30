@@ -64,7 +64,6 @@ class TrackElement extends StatefullElement<{}, TrackModel['state']> {
         address,
         orientations
     }: TrackModel['state']) {
-
         this.style.left = `${50 * address.column}px`;
         this.style.top = `${50 * address.row}px`;
 
@@ -163,17 +162,20 @@ class TrackElement extends StatefullElement<{}, TrackModel['state']> {
     }
 
     override changed(): void {
-
+        console.log("changed", this.props)
     }
 
     override mounted(): void {
+        console.log("mounted", this.props)
         const params = StatefullElement.game.getStateByAddress(this.props.address);
         if (params?.tracks) {
+            console.log("subscibed", this, params)
             params.tracks.subscribe(this.setProps);
         }
     }
 
     disconnectedCallback() {
+        console.log("dicsomm", this.props)
         const params = StatefullElement.game.getStateByAddress(this.props.address);
         if (params?.tracks) {
             params.tracks.unsubscribe(this.setProps);

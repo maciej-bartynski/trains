@@ -1,4 +1,5 @@
 import BuildingKind from "../enums/BuildingKind.js";
+import Direction from "../enums/Direction.js";
 import StatefullElement from "../framework/StatefullElement.js";
 import BoardModel from "../models/BoardModel.js";
 import PieceEnum from "../models/BoardModel.type.js";
@@ -9,10 +10,12 @@ import { FieldState } from "../models/FieldModel.type.js";
 import TrackModel from "../models/TrackModel.js";
 import { TrackState } from "../models/TrackModel.type.js";
 import Address from "../types/Address.js";
+import AdjacentFields from "../utils/AdjacentFields.js";
 import BuildingUtils from "../utils/BuildingUtils.js";
 
 type FieldMenuState = {
-    buildingsToBuild: Array<BuildingKind>
+    buildingsToBuild: Array<BuildingKind>,
+    harboursToBuild: Array<Direction>,
 }
 
 type FieldMenuProps = {
@@ -35,7 +38,8 @@ class FieldMenuElement extends StatefullElement<FieldMenuState, FieldMenuProps> 
     private buttonsList!: HTMLDivElement;
 
     override state: FieldMenuState = {
-        buildingsToBuild: []
+        buildingsToBuild: [],
+        harboursToBuild: []
     }
 
     constructor() {
@@ -113,38 +117,90 @@ class FieldMenuElement extends StatefullElement<FieldMenuState, FieldMenuProps> 
                 btn.innerText = kind;
                 btn.onclick = () => {
                     BoardModel.I().onBuildBuilding({
-                        address: selectedField, kind: kind,
+                        address: selectedField,
+                        buildingKind: kind as Exclude<BuildingKind, BuildingKind.Harbour>,
                     })
                 }
                 this.buttonsList.appendChild(btn);
-            })
+            });
+
+            if (this.state.harboursToBuild.length) {
+                this.buttonsList.appendChild(document.createElement('hr'));
+
+                this.state.harboursToBuild.forEach(harbourDirection => {
+                    const adjacentAddresses = AdjacentFields.getAdjacentAddresses({ address: selectedField });
+                    const seaAddress = adjacentAddresses[harbourDirection];
+                    if (!seaAddress) {
+                        return;
+                    }
+                    const btn = document.createElement('button');
+                    btn.innerText = `Harbour: ${harbourDirection}, ${JSON.stringify(selectedField)}`;
+                    btn.onclick = () => {
+                        BoardModel.I().onBuildBuilding({
+                            address: selectedField,
+                            buildingKind: BuildingKind.Harbour,
+                            options: {
+                                seaAddress,
+                            }
+                        })
+                    }
+                    this.buttonsList.appendChild(btn);
+                });
+            }
         }
 
         this.appendChild(this.styleEl)
     }
 
     override changed(): void {
-        const getListOfBuildingsPossibleToBuild = () => {
-            const address = this.props.selectedField;
-            if (address) {
-                const buildingsToBuild: Array<BuildingKind> = [];
-                for (const buildingKind of Object.values(BuildingKind)) {
-                    const canBuild = BuildingUtils.canBuild({
-                        address,
-                        buildingKind,
-                        options: undefined
-                    });
-                    if (canBuild) {
-                        buildingsToBuild.push(buildingKind);
+        const address = this.props.selectedField;
+        if (address) {
+            const buildingsToBuild: Array<BuildingKind> = [];
+            const harboursToBuild: Array<Direction> = [];
+
+            for (const buildingKind of Object.values(BuildingKind)) {
+
+                switch (buildingKind) {
+                    case BuildingKind.Harbour: {
+                        Object.entries(AdjacentFields.getAdjacentAddresses({ address })).forEach(entry => {
+
+                            const [direction, adjacentAddress] = entry as [Direction, Address | undefined];
+                            if (adjacentAddress && BuildingUtils.canBuild({
+                                address,
+                                buildingKind: BuildingKind.Harbour,
+                                options: {
+                                    seaAddress: adjacentAddress
+                                }
+                            })) {
+
+                                harboursToBuild.push(direction);
+                            }
+
+                        })
+                        break;
+                    }
+                    default: {
+                        if (BuildingUtils.canBuild({
+                            address,
+                            buildingKind,
+                            options: undefined
+                        })) {
+                            buildingsToBuild.push(buildingKind);
+                        }
                     }
                 }
-                this.setState({
-                    buildingsToBuild
-                })
             }
-        }
 
-        getListOfBuildingsPossibleToBuild()
+            this.setState({
+                buildingsToBuild,
+                harboursToBuild
+            })
+        } else {
+            this.setState({
+                buildingsToBuild: [],
+                harboursToBuild: []
+            })
+        }
     }
 
     override mounted(): void {

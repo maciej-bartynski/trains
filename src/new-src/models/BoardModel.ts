@@ -9,7 +9,7 @@ import baseSetup from "../scenarios/base.js";
 import Address from "../types/Address.js";
 import AddressUtils from "../utils/AddressUtils.js";
 import AdjacentFields from "../utils/AdjacentFields.js";
-import BuildingUtils from "../utils/BuildingUtils.js";
+import BuildingUtils, { CanBuildParams } from "../utils/BuildingUtils.js";
 import OrientationUtils from "../utils/OrientationUtils.js";
 import TrackUtils from "../utils/TrackUtils.js";
 import PieceEnum, { BoardState, SetupState } from "./BoardModel.type.js";
@@ -270,26 +270,31 @@ class BoardModel {
         this._notifyListeners(PieceEnum.Fields);
     }
 
-    public async onBuildBuilding(params: {
-        address: Address,
-        kind: BuildingKind
-    }) {
-        const { address, kind } = params;
+    public onBuildBuilding(params: CanBuildParams) {
+        const { address, buildingKind, options } = params;
         const key = AddressUtils.toKey(address);
 
-        const canBuild = await BuildingUtils.canBuild({
-            address,
-            buildingKind: kind
-        })
+        const canBuild = BuildingUtils.canBuild(params)
 
         if (canBuild) {
             this.state[PieceEnum.Buildings].set(key, new BuildingModel({
                 _id: key,
                 address,
-                kind,
+                kind: buildingKind as BuildingKind,
                 production: null,
                 storage: null,
             }));
+
+            if (buildingKind === BuildingKind.Harbour) {
+                const seaKey = AddressUtils.toKey(options.seaAddress);
+                this.state[PieceEnum.Buildings].set(seaKey, new BuildingModel({
+                    _id: seaKey,
+                    address: options.seaAddress,
+                    kind: buildingKind as BuildingKind,
+                    production: null,
+                    storage: null,
+                }));
+            }
 
             this._notifyListeners(PieceEnum.Buildings);
         }
@@ -312,12 +317,12 @@ class BoardModel {
         if (canBuild) {
             const { tracks } = this.getStateByAddress(address) ?? {};
 
-            let existingTracks: Record<TrackKind, Orientation | null> = tracks?.state.orientations ?? {
+            let existingTracks: Record<TrackKind, Orientation | null> = Object.assign({}, tracks?.state.orientations ?? {
                 [TrackKind.Railway]: null,
                 [TrackKind.Road]: null,
                 [TrackKind.Sail]: null,
                 [TrackKind.Fly]: null,
-            };
+            });
 
             const toBeUpdatedKind = existingTracks[params.kind];
 
@@ -338,10 +343,10 @@ class BoardModel {
                 this.state[PieceEnum.Tracks].set(key, new TrackModel({
                     _id: key,
                     address,
-                    orientations: existingTracks//mergedOrientations
+                    orientations: existingTracks
                 }));
             } else {
-                model.updateOrientation(existingTracks)//mergedOrientations)
+                model.updateOrientation(existingTracks)
             }
 
             this._notifyListeners(PieceEnum.Tracks);
