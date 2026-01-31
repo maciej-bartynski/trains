@@ -108,8 +108,8 @@ export function canBuildLandTrack(
     const anyExistingCenter = Object.values(existingNodesByKind).some(nodes => nodes.has('center'));
 
     // Center always occupies whole field.
-    if (newNodes.has('center')) {
-        return !hasAnyExistingTrack;
+    if (newNodes.has('center') && hasAnyExistingTrack) {
+        return false;
     }
 
     // If something already uses center, nothing else can be built.
@@ -283,8 +283,8 @@ export function canBuildSail(
     const anyExistingCenter = Object.values(existingNodesByKind).some(nodes => nodes.has('center'));
 
     // Center always occupies whole field.
-    if (newNodes.has('center')) {
-        return !hasAnyExistingTrack;
+    if (newNodes.has('center') && hasAnyExistingTrack) {
+        return false;
     }
 
     // If something already uses center, nothing else can be built.
@@ -318,26 +318,36 @@ export function canBuildSail(
     }
 
     // Must connect to water or existing sail (cardinal only).
-    const connectsToWater = [...newNodes].some((node) => {
-        if (node === 'center') return false;
-        const neighbor = directionToAddress(address, node as Direction);
+    const centerDirections = newOrientation.center
+        ? (Object.entries(newOrientation.center)
+            .filter(([, isConnected]) => isConnected)
+            .map(([dir]) => dir as Direction))
+        : [];
+    const connectionDirections: Direction[] = newNodes.has('center')
+        ? centerDirections
+        : ([...newNodes].filter(node => node !== 'center') as Direction[]);
+
+    const connectsToWater = connectionDirections.some((dir) => {
+        const neighbor = directionToAddress(address, dir);
         return isWaterField(neighbor);
     });
     const existingSailNodes = existingNodesByKind[TrackKind.Sail] ?? new Set<TrackNode>();
-    const connectsToSailOnSameTile = [...newNodes].some((node) => {
-        if (node === 'center') return false;
-        return existingSailNodes.has(node);
+    const connectsToSailOnSameTile = !newNodes.has('center') && connectionDirections.some((dir) => {
+        return existingSailNodes.has(dir);
     });
-    const connectsToSailFromNeighbor = [...newNodes].some((node) => {
-        if (node === 'center') return false;
-        const neighbor = directionToAddress(address, node as Direction);
+    const connectsToSailFromNeighbor = connectionDirections.some((dir) => {
+        const neighbor = directionToAddress(address, dir);
         if (!neighbor) return false;
         const neighborSail = game.getStateByAddress(neighbor)?.tracks?.state.orientations[TrackKind.Sail] ?? null;
         if (!neighborSail) return false;
         const neighborNodes = getOccupiedNodes(neighborSail);
-        const opposite = OrientationUtils.OpositeDirections[node as Direction];
+        const opposite = OrientationUtils.OpositeDirections[dir];
         return neighborNodes.has(opposite);
     });
+    if (newNodes.has('center')) {
+        return connectsToWater || connectsToSailFromNeighbor;
+    }
+
     if (!connectsToWater && !connectsToSailOnSameTile && !connectsToSailFromNeighbor) {
         return false;
     }
