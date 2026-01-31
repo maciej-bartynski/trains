@@ -1,7 +1,5 @@
 import BoardModel from "./models/BoardModel.js";
 
-const GameInstance = BoardModel.I();
-
 import BuildingElement from "./elements/BuildingElement.js";
 import FieldElement from "./elements/FieldElement.js";
 import FieldMenuElement from "./elements/FieldMenuElement.js";
@@ -104,36 +102,37 @@ const syncElementsByAddress = <
     });
 }
 
-function subscribeFields(worldElement: WorldElement) {
+function subscribeFields(game: BoardModel, worldElement: WorldElement) {
     syncElementsByAddress({
         worldElement,
         selector: `${FieldElement.tagName}[data-field]`,
-        models: GameInstance.state.fields,
+        models: game.state.fields,
         createElement: FieldElement.createElement
     });
 }
 
-function subscribeTracks(worldElement: WorldElement) {
+function subscribeTracks(game: BoardModel, worldElement: WorldElement) {
     syncElementsByAddress({
         worldElement,
         selector: `${TrackElement.tagName}[data-field]`,
-        models: GameInstance.state.tracks,
+        models: game.state.tracks,
         createElement: TrackElement.createElement
     });
 }
 
-function subscribeBuildings(worldElement: WorldElement) {
+function subscribeBuildings(game: BoardModel, worldElement: WorldElement) {
     syncElementsByAddress({
         worldElement,
         selector: `${BuildingElement.tagName}[data-field]`,
-        models: GameInstance.state.buildings,
+        models: game.state.buildings,
         createElement: BuildingElement.createElement
     });
 }
 
 async function bootstrapGame() {
-    GameInstance.init();
-    await GameInstance.configured;
+    const game = BoardModel.I();
+    game.init();
+    await game.configured;
 
     const worldElement = WorldElement.createElement();
     const fieldMenuElement = document.createElement(FieldMenuElement.tagName);
@@ -144,7 +143,7 @@ async function bootstrapGame() {
         gameUnsub();
         await DB.I().drop();
         worldElement.clearFrameHTML();
-        await GameInstance.configure();
+        await game.configure();
         gameSub();
     }
 
@@ -155,31 +154,31 @@ async function bootstrapGame() {
     document.body.appendChild(worldElement);
 
     document.oncontextmenu = (e => {
-        GameInstance.setSelectedField({ selectedField: null })
+        game.setSelectedField({ selectedField: null })
     })
 
     const onFieldsChange = () => {
-        subscribeFields(worldElement);
+        subscribeFields(game, worldElement);
     };
 
     const onBuildingsChange = () => {
-        subscribeBuildings(worldElement);
+        subscribeBuildings(game, worldElement);
     };
 
     const onTracksChange = () => {
-        subscribeTracks(worldElement);
+        subscribeTracks(game, worldElement);
     };
 
     const gameSub = () => {
-        GameInstance.subscribePiece(onFieldsChange, { type: PieceEnum.Fields });
-        GameInstance.subscribePiece(onBuildingsChange, { type: PieceEnum.Buildings });
-        GameInstance.subscribePiece(onTracksChange, { type: PieceEnum.Tracks });
+        game.subscribePiece(onFieldsChange, { type: PieceEnum.Fields });
+        game.subscribePiece(onBuildingsChange, { type: PieceEnum.Buildings });
+        game.subscribePiece(onTracksChange, { type: PieceEnum.Tracks });
     };
 
     const gameUnsub = () => {
-        GameInstance.unsubscribePiece(onFieldsChange, { type: PieceEnum.Fields });
-        GameInstance.unsubscribePiece(onBuildingsChange, { type: PieceEnum.Buildings });
-        GameInstance.unsubscribePiece(onTracksChange, { type: PieceEnum.Tracks });
+        game.unsubscribePiece(onFieldsChange, { type: PieceEnum.Fields });
+        game.unsubscribePiece(onBuildingsChange, { type: PieceEnum.Buildings });
+        game.unsubscribePiece(onTracksChange, { type: PieceEnum.Tracks });
     };
 
     gameSub();
