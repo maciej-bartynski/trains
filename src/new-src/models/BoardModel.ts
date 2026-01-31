@@ -224,15 +224,13 @@ class BoardModel {
         return BoardModel._i;
     }
 
-    private constructor() {
-        this.configure = this.configure.bind(this);
-        this.restart = this.restart.bind(this);
-        this.onUncoverField = this.onUncoverField.bind(this);
-        this.onBuildBuilding = this.onBuildBuilding.bind(this);
-        this.onBuildTrack = this.onBuildTrack.bind(this);
-        this.subscribePiece = this.subscribePiece.bind(this);
-        this.unsubscribePiece = this.unsubscribePiece.bind(this);
-        this.setSelectedField = this.setSelectedField.bind(this);
+    private _initialized = false;
+
+    public init() {
+        if (this._initialized) {
+            return;
+        }
+        this._initialized = true;
 
         BuildingUtils.game = this;
         TrackUtils.game = this;
@@ -244,6 +242,17 @@ class BoardModel {
         BuildingModel.game = this;
 
         this.configure();
+    }
+
+    private constructor() {
+        this.configure = this.configure.bind(this);
+        this.restart = this.restart.bind(this);
+        this.onUncoverField = this.onUncoverField.bind(this);
+        this.onBuildBuilding = this.onBuildBuilding.bind(this);
+        this.onBuildTrack = this.onBuildTrack.bind(this);
+        this.subscribePiece = this.subscribePiece.bind(this);
+        this.unsubscribePiece = this.unsubscribePiece.bind(this);
+        this.setSelectedField = this.setSelectedField.bind(this);
     }
 
 

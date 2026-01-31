@@ -131,7 +131,8 @@ function subscribeBuildings(worldElement: WorldElement) {
     });
 }
 
-async function onDOMContentLoadedInitializeGame() {
+async function bootstrapGame() {
+    GameInstance.init();
     await GameInstance.configured;
 
     const worldElement = WorldElement.createElement();
@@ -184,4 +185,4 @@ async function onDOMContentLoadedInitializeGame() {
     gameSub();
 }
 
-document.addEventListener('DOMContentLoaded', onDOMContentLoadedInitializeGame);
+document.addEventListener('DOMContentLoaded', bootstrapGame);
