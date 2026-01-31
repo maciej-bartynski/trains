@@ -1,4 +1,5 @@
 import TerrainKind from "../enums/TerrainKind.js";
+import Config from "#src/config.js";
 import BoardModel from "../models/BoardModel.js";
 import Address from "../types/Address.js";
 import TrackKind from "../enums/TrackKind.js";
@@ -127,6 +128,218 @@ export function canBuildLandTrack(
         if (existingKind === trackKind) continue;
         const overlaps = [...newNodes].some(node => existingNodes.has(node));
         if (overlaps) return false;
+    }
+
+    return true;
+}
+
+const getOccupiedNodes = (orientation?: Orientation | null): Set<TrackNode> => {
+    const occupied = new Set<TrackNode>();
+    if (!orientation) return occupied;
+
+    if (orientation.center) {
+        occupied.add('center');
+        Object.entries(orientation.center).forEach(([dir, isConnected]) => {
+            if (isConnected) occupied.add(dir as Direction);
+        });
+    }
+
+    Object.entries(orientation).forEach(([node, connections]) => {
+        if (node === 'center' || !connections) return;
+        const hasConnection = Object.values(connections).some(Boolean);
+        if (hasConnection) occupied.add(node as Direction);
+        if ((connections as Record<string, boolean>)['center']) occupied.add('center');
+    });
+
+    return occupied;
+};
+
+const getEdges = (orientation?: Orientation | null): Set<string> => {
+    const edges = new Set<string>();
+    if (!orientation) return edges;
+
+    const addEdge = (a: TrackNode, b: TrackNode) => {
+        const key = [a, b].sort().join('|');
+        edges.add(key);
+    };
+
+    if (orientation.center) {
+        Object.entries(orientation.center).forEach(([dir, isConnected]) => {
+            if (isConnected) addEdge('center', dir as Direction);
+        });
+    }
+
+    Object.entries(orientation).forEach(([fromNode, connections]) => {
+        if (fromNode === 'center' || !connections) return;
+        Object.entries(connections).forEach(([toNode, isConnected]) => {
+            if (isConnected) addEdge(fromNode as Direction, toNode as TrackNode);
+        });
+    });
+
+    return edges;
+};
+
+const isSubset = (subset: Set<string>, superset: Set<string>) => {
+    for (const v of subset) {
+        if (!superset.has(v)) return false;
+    }
+    return true;
+};
+
+const normalizeSailOrientation = (orientation: Orientation): Orientation => {
+    if (orientation.center) {
+        return orientation;
+    }
+
+    const nodes = [...getOccupiedNodes(orientation)].filter(node => node !== 'center') as Direction[];
+    const allConnections: OrientationGeneral = {
+        [Direction.Top]: null,
+        [Direction.Right]: null,
+        [Direction.Bottom]: null,
+        [Direction.Left]: null,
+        'center': null,
+    };
+
+    nodes.forEach(node => {
+        const connections: TrackNodeConnections = {};
+        nodes.forEach(other => {
+            if (other !== node) {
+                connections[other] = true;
+            }
+        });
+        connections.center = false;
+        allConnections[node] = connections;
+    });
+
+    return allConnections as Orientation;
+};
+
+export function canBuildSail(
+    address: Address,
+    game: BoardModel,
+    options: {
+        orientations: Orientation
+    }
+) {
+    const {
+        field,
+        tracks,
+    } = game.getStateByAddress(address) ?? {};
+
+    if (!field?.state.terrain) {
+        return false;
+    }
+
+    if ([TerrainKind.Water, TerrainKind.WaterCold].includes(field.state.terrain)) {
+        return false;
+    }
+
+    const newOrientation = options.orientations;
+
+    const isWaterField = (addr: Address | null | undefined) => {
+        if (!addr) return false;
+        const state = game.getStateByAddress(addr)?.field?.state;
+        if (!state?.terrain) return false;
+        return [TerrainKind.Water, TerrainKind.WaterCold].includes(state.terrain);
+    };
+
+    const directionToAddress = (from: Address, direction: Direction): Address | null => {
+        const max = Config.boardSize - 1;
+        if (direction === Direction.Top) {
+            return from.row - 1 >= 0 ? { row: from.row - 1, column: from.column } : null;
+        }
+        if (direction === Direction.Bottom) {
+            return from.row + 1 <= max ? { row: from.row + 1, column: from.column } : null;
+        }
+        if (direction === Direction.Left) {
+            return from.column - 1 >= 0 ? { row: from.row, column: from.column - 1 } : null;
+        }
+        if (direction === Direction.Right) {
+            return from.column + 1 <= max ? { row: from.row, column: from.column + 1 } : null;
+        }
+        return null;
+    };
+
+    const newNodes = getOccupiedNodes(newOrientation);
+    const newEdges = getEdges(newOrientation);
+
+    const existingOrientations = Object.assign({}, tracks?.state.orientations ?? {});
+    const existingNodesByKind = Object.entries(existingOrientations).reduce<Record<string, Set<TrackNode>>>(
+        (acc, [kind, orientation]) => {
+            acc[kind] = getOccupiedNodes(orientation as Orientation | null);
+            return acc;
+        },
+        {}
+    );
+    const existingEdgesByKind = Object.entries(existingOrientations).reduce<Record<string, Set<string>>>(
+        (acc, [kind, orientation]) => {
+            acc[kind] = getEdges(orientation as Orientation | null);
+            return acc;
+        },
+        {}
+    );
+
+    const hasAnyExistingTrack = Object.values(existingNodesByKind).some(nodes => nodes.size > 0);
+    const anyExistingCenter = Object.values(existingNodesByKind).some(nodes => nodes.has('center'));
+
+    // Center always occupies whole field.
+    if (newNodes.has('center')) {
+        return !hasAnyExistingTrack;
+    }
+
+    // If something already uses center, nothing else can be built.
+    if (anyExistingCenter) {
+        return false;
+    }
+
+    // Duplicate only if ALL new edges already exist for SAME kind.
+    const sameKindEdges = existingEdgesByKind[TrackKind.Sail];
+    if (sameKindEdges && isSubset(newEdges, sameKindEdges)) {
+        return false;
+    }
+
+    // If sail is not straight, no other kinds are allowed.
+    const sailHasVertical = newEdges.has([Direction.Top, Direction.Bottom].sort().join('|'));
+    const sailHasHorizontal = newEdges.has([Direction.Left, Direction.Right].sort().join('|'));
+    const sailIsStraight = (sailHasVertical && !sailHasHorizontal) || (!sailHasVertical && sailHasHorizontal);
+    const otherKindsExist = Object.entries(existingNodesByKind).some(([kind, nodes]) => {
+        if (kind === TrackKind.Sail) return false;
+        return nodes.size > 0;
+    });
+    if (!sailIsStraight && otherKindsExist) {
+        return false;
+    }
+
+    // Different track kinds cannot share any node.
+    for (const [existingKind, existingNodes] of Object.entries(existingNodesByKind)) {
+        if (existingKind === TrackKind.Sail) continue;
+        const overlaps = [...newNodes].some(node => existingNodes.has(node));
+        if (overlaps) return false;
+    }
+
+    // Must connect to water or existing sail (cardinal only).
+    const connectsToWater = [...newNodes].some((node) => {
+        if (node === 'center') return false;
+        const neighbor = directionToAddress(address, node as Direction);
+        return isWaterField(neighbor);
+    });
+    const existingSailNodes = existingNodesByKind[TrackKind.Sail] ?? new Set<TrackNode>();
+    const connectsToSailOnSameTile = [...newNodes].some((node) => {
+        if (node === 'center') return false;
+        return existingSailNodes.has(node);
+    });
+    const connectsToSailFromNeighbor = [...newNodes].some((node) => {
+        if (node === 'center') return false;
+        const neighbor = directionToAddress(address, node as Direction);
+        if (!neighbor) return false;
+        const neighborSail = game.getStateByAddress(neighbor)?.tracks?.state.orientations[TrackKind.Sail] ?? null;
+        if (!neighborSail) return false;
+        const neighborNodes = getOccupiedNodes(neighborSail);
+        const opposite = OrientationUtils.OpositeDirections[node as Direction];
+        return neighborNodes.has(opposite);
+    });
+    if (!connectsToWater && !connectsToSailOnSameTile && !connectsToSailFromNeighbor) {
+        return false;
     }
 
     return true;
@@ -571,6 +784,8 @@ interface trackUtils {
     isTrackStraight(kind: TrackKind, address: Address, game: BoardModel): boolean;
     canBuild(params: CanBuildParams): boolean;
     canBuildLandTrack(address: Address, game: BoardModel, trackKind: TrackKind, options: { orientations: Orientation }): boolean;
+    canBuildSail(address: Address, game: BoardModel, options: { orientations: Orientation }): boolean;
+    normalizeSailOrientation(orientation: Orientation): Orientation;
 }
 
 const TrackUtils: trackUtils = {
@@ -591,6 +806,10 @@ const TrackUtils: trackUtils = {
                 return this.canBuildLandTrack(address, this.game, trackKind, options);
             }
 
+            case TrackKind.Sail: {
+                return canBuildSail(address, this.game, options);
+            }
+
             default: {
                 return false;
             }
@@ -598,10 +817,12 @@ const TrackUtils: trackUtils = {
         }
     },
     canBuildLandTrack,
+    canBuildSail,
     isTrackCross,
     isTrackCenter,
     isTrackStraight,
-    TrackVariants
+    TrackVariants,
+    normalizeSailOrientation
 }
 
 export default TrackUtils;

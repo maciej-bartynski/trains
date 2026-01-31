@@ -29,6 +29,13 @@ x-track {
     --track-color: black;
 }
 
+.x-track_layer-sail {
+    --track-width: 12px;
+    --track-offset: 19px;
+    --track-curvature: 31px;
+    --track-color: blue;
+}
+
 .x-track_to-center {
     width: 25px;
     height: var(--track-width);

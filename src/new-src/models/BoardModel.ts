@@ -348,6 +348,10 @@ class BoardModel {
                 });
             }
 
+            if (params.kind === TrackKind.Sail && existingTracks[TrackKind.Sail]) {
+                existingTracks[TrackKind.Sail] = TrackUtils.normalizeSailOrientation(existingTracks[TrackKind.Sail]!);
+            }
+
             let model = this.state[PieceEnum.Tracks].get(key);
 
             if (!model) {

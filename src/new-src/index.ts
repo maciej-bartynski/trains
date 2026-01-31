@@ -11,6 +11,7 @@ import WorldElement from "./elements/WorldElement.js";
 import MenuBuildRailway from "./elements/MenuBuildRailway.js";
 import TrackElement from "./elements/TrackElement.js";
 import MenuBuildRoad from "./elements/MenuBuildRoad.js";
+import MenuBuildSail from "./elements/MenuBuildSail.js";
 
 // indexedDB.deleteDatabase('game');
 
@@ -19,6 +20,7 @@ customElements.define(BuildingElement.tagName, BuildingElement);
 customElements.define(FieldMenuElement.tagName, FieldMenuElement);
 customElements.define(MenuBuildRailway.tagName, MenuBuildRailway);
 customElements.define(MenuBuildRoad.tagName, MenuBuildRoad);
+customElements.define(MenuBuildSail.tagName, MenuBuildSail);
 customElements.define(WorldElement.tagName, WorldElement);
 customElements.define(TrackElement.tagName, TrackElement);
 
@@ -138,6 +140,7 @@ async function bootstrapGame() {
     const fieldMenuElement = document.createElement(FieldMenuElement.tagName);
     const menuBuildRailway = document.createElement(MenuBuildRailway.tagName);
     const menuBuildRoad = document.createElement(MenuBuildRoad.tagName);
+    const menuBuildSail = document.createElement(MenuBuildSail.tagName);
 
     resetGameBtn.onclick = async () => {
         gameUnsub();
@@ -151,6 +154,7 @@ async function bootstrapGame() {
     document.body.appendChild(fieldMenuElement);
     document.body.appendChild(menuBuildRailway);
     document.body.appendChild(menuBuildRoad);
+    document.body.appendChild(menuBuildSail);
     document.body.appendChild(worldElement);
 
     document.oncontextmenu = (e => {
