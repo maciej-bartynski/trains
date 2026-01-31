@@ -45,8 +45,6 @@ class RouteItem extends StatefullComponent<State, Props> {
 
     override render() {
 
-        console.log("why i render", arguments)
-
         const { route, routeIndex, journey, train, journeyDepartureStation } = this.getProps();
 
         const destinationAddress = route[route.length - 1]?.state.address;

@@ -1,11 +1,10 @@
 import BuildingKind from "../enums/BuildingKind.js";
 import Direction from "../enums/Direction.js";
-import Orientation, { OrientationGeneral } from "../enums/Orientation.js";
+import Orientation from "../enums/Orientation.js";
 import TrackKind from "../enums/TrackKind.js";
 import DB from "../framework/DbService.js";
 import State from "../framework/State.js";
 import StatefullElement from "../framework/StatefullElement.js";
-import baseSetup from "../scenarios/base.js";
 import Address from "../types/Address.js";
 import AddressUtils from "../utils/AddressUtils.js";
 import AdjacentFields from "../utils/AdjacentFields.js";
@@ -18,6 +17,7 @@ import EventsModel from "./EventsModel.js";
 import FieldModel from "./FieldModel.js";
 import TrackModel from "./TrackModel.js";
 import TrainModel from "./TrainModel.js";
+import baseSetup from "../scenarios/base.js";
 
 class BoardModel {
 
@@ -236,6 +236,8 @@ class BoardModel {
 
         BuildingUtils.game = this;
         TrackUtils.game = this;
+        AdjacentFields.game = this;
+
         State.game = this;
         StatefullElement.game = this;
         FieldModel.game = this;

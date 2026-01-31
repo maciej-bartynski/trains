@@ -162,20 +162,16 @@ class TrackElement extends StatefullElement<{}, TrackModel['state']> {
     }
 
     override changed(): void {
-        console.log("changed", this.props)
     }
 
     override mounted(): void {
-        console.log("mounted", this.props)
         const params = StatefullElement.game.getStateByAddress(this.props.address);
         if (params?.tracks) {
-            console.log("subscibed", this, params)
             params.tracks.subscribe(this.setProps);
         }
     }
 
     disconnectedCallback() {
-        console.log("dicsomm", this.props)
         const params = StatefullElement.game.getStateByAddress(this.props.address);
         if (params?.tracks) {
             params.tracks.unsubscribe(this.setProps);

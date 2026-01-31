@@ -1,9 +1,13 @@
+import BoardModel from "./models/BoardModel.js";
+
+const GameInstance = BoardModel.I();
+
 import BuildingElement from "./elements/BuildingElement.js";
 import FieldElement from "./elements/FieldElement.js";
 import FieldMenuElement from "./elements/FieldMenuElement.js";
-import BoardModel from "./models/BoardModel.js";
 import PieceEnum from "./models/BoardModel.type.js";
 import AddressUtils from "./utils/AddressUtils.js";
+import type Address from "./types/Address.js";
 import DB from "./framework/DbService.js";
 import WorldElement from "./elements/WorldElement.js";
 import MenuBuildRailway from "./elements/MenuBuildRailway.js";
@@ -20,14 +24,114 @@ customElements.define(MenuBuildRoad.tagName, MenuBuildRoad);
 customElements.define(WorldElement.tagName, WorldElement);
 customElements.define(TrackElement.tagName, TrackElement);
 
-const GameInstance = BoardModel.I();
-
-export default GameInstance;
-
 const resetGameBtn = document.createElement('button');
 resetGameBtn.innerText = 'Again';
 
-document.addEventListener('DOMContentLoaded', async () => {
+const pick = <T>(arr: T[], condition: (el: T) => boolean) => {
+    let foundId: number | undefined;
+    let foundItem = arr.find((el, id) => {
+        if (condition(el)) {
+            foundId = id;
+            return true;
+        }
+        return false;
+    });
+
+    if (typeof foundId === 'number') {
+        arr = [
+            ...arr.slice(0, foundId),
+            ...arr.slice(foundId + 1)
+        ]
+    }
+
+    return { found: foundItem, source: arr };
+}
+
+type AddressedState = {
+    address: Address;
+    _id: string;
+};
+
+type ModelWithState<TState extends AddressedState> = {
+    state: TState;
+};
+
+type ElementWithProps<TState extends AddressedState> = HTMLElement & {
+    props: TState;
+    isConnected: boolean;
+};
+
+const syncElementsByAddress = <
+    TState extends AddressedState,
+    TModel extends ModelWithState<TState>,
+    TElement extends ElementWithProps<TState>
+>(params: {
+    worldElement: WorldElement;
+    selector: string;
+    models: Map<string, TModel>;
+    createElement: () => TElement;
+}) => {
+    const sourceElements = document.querySelectorAll(params.selector) as NodeListOf<TElement>;
+    let elements = [...sourceElements];
+
+    params.models.forEach((model) => {
+        const picked = pick<TElement>(
+            elements,
+            (fieldElement) => {
+                return AddressUtils.isAddressEqual(
+                    fieldElement.props.address,
+                    model.state.address
+                );
+            }
+        );
+
+        let found = picked.found;
+        elements = picked.source;
+
+        if (!found) {
+            found = params.createElement();
+            found.setAttribute('data-field', model.state._id);
+            found.props = model.state;
+        }
+
+        if (!found.isConnected) {
+            params.worldElement.appendFrameChild(found)
+        }
+    });
+
+    elements.forEach(el => {
+        el.remove()
+    });
+}
+
+function subscribeFields(worldElement: WorldElement) {
+    syncElementsByAddress({
+        worldElement,
+        selector: `${FieldElement.tagName}[data-field]`,
+        models: GameInstance.state.fields,
+        createElement: FieldElement.createElement
+    });
+}
+
+function subscribeTracks(worldElement: WorldElement) {
+    syncElementsByAddress({
+        worldElement,
+        selector: `${TrackElement.tagName}[data-field]`,
+        models: GameInstance.state.tracks,
+        createElement: TrackElement.createElement
+    });
+}
+
+function subscribeBuildings(worldElement: WorldElement) {
+    syncElementsByAddress({
+        worldElement,
+        selector: `${BuildingElement.tagName}[data-field]`,
+        models: GameInstance.state.buildings,
+        createElement: BuildingElement.createElement
+    });
+}
+
+async function onDOMContentLoadedInitializeGame() {
     await GameInstance.configured;
 
     const worldElement = WorldElement.createElement();
@@ -36,12 +140,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     const menuBuildRoad = document.createElement(MenuBuildRoad.tagName);
 
     resetGameBtn.onclick = async () => {
-        GameInstance.unsubscribePiece(gameSub)
+        gameUnsub();
         await DB.I().drop();
         worldElement.clearFrameHTML();
         await GameInstance.configure();
-        GameInstance.subscribePiece(gameSub, { type: PieceEnum.Fields })
-        GameInstance.subscribePiece(gameSub, { type: PieceEnum.Buildings })
+        gameSub();
     }
 
     document.body.appendChild(resetGameBtn);
@@ -54,122 +157,31 @@ document.addEventListener('DOMContentLoaded', async () => {
         GameInstance.setSelectedField({ selectedField: null })
     })
 
+    const onFieldsChange = () => {
+        subscribeFields(worldElement);
+    };
+
+    const onBuildingsChange = () => {
+        subscribeBuildings(worldElement);
+    };
+
+    const onTracksChange = () => {
+        subscribeTracks(worldElement);
+    };
+
     const gameSub = () => {
+        GameInstance.subscribePiece(onFieldsChange, { type: PieceEnum.Fields });
+        GameInstance.subscribePiece(onBuildingsChange, { type: PieceEnum.Buildings });
+        GameInstance.subscribePiece(onTracksChange, { type: PieceEnum.Tracks });
+    };
 
-        const fields = GameInstance.state.fields;
-        const buildings = GameInstance.state.buildings;
-        const _fieldElements = document.querySelectorAll(`${FieldElement.tagName}[data-field]`) as NodeListOf<FieldElement>;
-        let fieldElements = [..._fieldElements];
+    const gameUnsub = () => {
+        GameInstance.unsubscribePiece(onFieldsChange, { type: PieceEnum.Fields });
+        GameInstance.unsubscribePiece(onBuildingsChange, { type: PieceEnum.Buildings });
+        GameInstance.unsubscribePiece(onTracksChange, { type: PieceEnum.Tracks });
+    };
 
-        fields.forEach((fieldModel, addressKey) => {
-            let foundId;
-            let fieldElement = fieldElements.find((el, id) => {
-                if (AddressUtils.isAddressEqual(el.props.address, fieldModel.state.address)) {
-                    foundId = id;
-                    return true;
-                }
-                return false;
-            });
+    gameSub();
+}
 
-            if (typeof foundId === 'number') {
-                fieldElements = [
-                    ...fieldElements.slice(0, foundId),
-                    ...fieldElements.slice(foundId + 1)
-                ]
-            }
-
-            if (!fieldElement) {
-                fieldElement = document.createElement(FieldElement.tagName) as FieldElement;
-                fieldElement.setAttribute('data-field', fieldModel.state._id);
-                fieldElement.props = fieldModel.state;
-            }
-
-            if (!fieldElement.isConnected) {
-                worldElement.appendFrameChild(fieldElement)
-            }
-        });
-
-        fieldElements.forEach(el => {
-            el.remove()
-        });
-
-        ///
-
-        const _buildingElements = document.querySelectorAll(`${BuildingElement.tagName}[data-field]`) as NodeListOf<BuildingElement>;
-        let buildingElements = [..._buildingElements];
-
-        buildings.forEach((buildingModel, addressKey) => {
-            let foundId;
-            let buildingEl = buildingElements.find((el, id) => {
-                if (AddressUtils.isAddressEqual(el.props.address, buildingModel.state.address)) {
-                    foundId = id;
-                    return true;
-                }
-                return false;
-            });
-
-            if (typeof foundId === 'number') {
-                buildingElements = [
-                    ...buildingElements.slice(0, foundId),
-                    ...buildingElements.slice(foundId + 1)
-                ]
-            }
-
-            if (!buildingEl) {
-                buildingEl = document.createElement(BuildingElement.tagName) as BuildingElement;
-                buildingEl.setAttribute('data-field', buildingModel.state._id);
-                buildingEl.props = buildingModel.state;
-            }
-
-            if (!buildingEl.isConnected) {
-                worldElement.appendFrameChild(buildingEl)
-            }
-        });
-
-        buildingElements.forEach(el => {
-            el.remove()
-        });
-
-        ///
-
-        const _trackElements = document.querySelectorAll(`${TrackElement.tagName}[data-field]`) as NodeListOf<TrackElement>;
-        let trackElements = [..._trackElements];
-        const tracks = GameInstance.state.tracks;
-
-        tracks.forEach((trackModel, addressKey) => {
-            let foundId;
-            let trackEl = trackElements.find((el, id) => {
-                if (AddressUtils.isAddressEqual(el.props.address, trackModel.state.address)) {
-                    foundId = id;
-                    return true;
-                }
-                return false;
-            });
-
-            if (typeof foundId === 'number') {
-                trackElements = [
-                    ...trackElements.slice(0, foundId),
-                    ...trackElements.slice(foundId + 1)
-                ]
-            }
-
-            if (!trackEl) {
-                trackEl = document.createElement(TrackElement.tagName) as TrackElement;
-                trackEl.setAttribute('data-field', trackModel.state._id);
-                trackEl.props = trackModel.state;
-            }
-
-            if (!trackEl.isConnected) {
-                worldElement.appendFrameChild(trackEl)
-            }
-        });
-
-        trackElements.forEach(el => {
-            el.remove()
-        });
-    }
-
-    GameInstance.subscribePiece(gameSub, { type: PieceEnum.Fields });
-    GameInstance.subscribePiece(gameSub, { type: PieceEnum.Buildings });
-    GameInstance.subscribePiece(gameSub, { type: PieceEnum.Tracks });
-});
+document.addEventListener('DOMContentLoaded', onDOMContentLoadedInitializeGame);

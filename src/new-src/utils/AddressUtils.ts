@@ -2,7 +2,7 @@ import Address from "../types/Address.js";
 
 const AddressUtils = {
     toKey(address: Address) {
-        return `{row:${address.row},column:${address.column}}`;
+        return `{"row":${address.row},"column":${address.column}}`;
     },
 
     fromKey(key: string): Address | null {

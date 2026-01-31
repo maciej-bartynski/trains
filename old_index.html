@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trains</title>
+    <script type="importmap">
+    {
+        "imports": {
+            "#src/": "./dist/"
+        }
+    }
+    </script>
+    <script src="./dist/index.js" type="module"></script>
+    <link rel="stylesheet" href="./index.css" />
+    <link rel="stylesheet" href="./css/game-board.css" />
+    <link rel="stylesheet" href="./css/train-run.css" />
+    <link rel="stylesheet" href="./css/action-menu.css" />
+
+    <link rel="stylesheet" href="./css/game-field-element.css" />
+    <link rel="stylesheet" href="./css/menu-bottom-element.css" />
+    <link rel="stylesheet" href="./css/menu-trains-element.css" />
+    <link rel="stylesheet" href="./css/menu-train-set-route.css" />
+
+    <link rel="stylesheet" href="./css/list.css" />
+    <link rel="stylesheet" href="./css/buttons.css" />
+</head>
+
+<body>
+    <game-board-element>
+        <div class="GameBoardElement_world-bg"></div>
+        <div class="GameBoardElement_floater" id="GameBoardElement_floater-top-left"></div>
+        <div class="GameBoardElement_floater" id="GameBoardElement_floater-bottom-left"></div>
+        <div class="GameBoardElement_floater" id="GameBoardElement_floater-top-right"></div>
+    </game-board-element>
+    <div class="navigation-layer">
+        <menu-bottom-element></menu-bottom-element>
+        <menu-trains-element></menu-trains-element>
+        <menu-train-set-route></menu-train-set-route>
+        <field-menu></field-menu>
+        <action-menu> </action-menu>
+    </div>
+
+    <!-- Templates section -->
+    <script>
+        class Templates extends HTMLElement { }
+        customElements.define('templates-element', Templates);
+    </script>
+    <style>
+        /* Templates will be hidden */
+        templates-element {
+            display: none;
+            visibility: hidden;
+        }
+    </style>
+    <templates-element>
+        <!-- Templates will be loaded dynamically -->
+    </templates-element>
+    <!-- Templates section -->
+</body>
+
+</html>

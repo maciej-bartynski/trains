@@ -3,16 +3,19 @@ import Address from "../types/Address.js";
 import Diagonal from "../enums/Diagonal.js";
 import AddressUtils from "./AddressUtils.js";
 import { FieldState } from "../models/FieldModel.type.js";
-import GameInstance from "../index.js";
+//import GameInstance from '../index.js';
+import BoardModel from "../models/BoardModel.js";
 
-const getAdjacentAddresses = (params: {
+// const gameInstance = () => BoardModel.I();
+
+function getAdjacentAddresses(params: {
     address: Address,
 }): {
     top: Address | undefined,
     bottom: Address | undefined,
     left: Address | undefined,
     right: Address | undefined,
-} => {
+} {
     let topAdjacentAddress: Address | undefined = undefined;
     if (params.address.row - 1 >= 0) {
         topAdjacentAddress = {
@@ -53,14 +56,14 @@ const getAdjacentAddresses = (params: {
     };
 }
 
-const getDiagonalAddresses = (params: {
+function getDiagonalAddresses(params: {
     address: Address,
 }): {
     [Diagonal.TopLeft]: Address | undefined,
     [Diagonal.TopRight]: Address | undefined,
     [Diagonal.BottomLeft]: Address | undefined,
     [Diagonal.BottomRight]: Address | undefined,
-} => {
+} {
     let topLeftAddress: Address | undefined = undefined;
     let topRightAddress: Address | undefined = undefined;
     let bottomLeftAddress: Address | undefined = undefined;
@@ -102,70 +105,178 @@ const getDiagonalAddresses = (params: {
     }
 }
 
-const getAdjacentFields = (params: {
-    address: Address,
-}): {
-    top: FieldState | undefined,
-    bottom: FieldState | undefined,
-    left: FieldState | undefined,
-    right: FieldState | undefined,
-} => {
-    const adjacentAddresses = getAdjacentAddresses({ address: params.address });
+// function getAdjacentFields(params: {
+//     address: Address,
+// }): {
+//     top: FieldState | undefined,
+//     bottom: FieldState | undefined,
+//     left: FieldState | undefined,
+//     right: FieldState | undefined,
+// } {
+//     if (!this?.game as any) {
+//         throw new Error('AdjacentFields uses before game initialization')
+//     }
 
-    const adjacentFields: {
+//     const adjacentAddresses = getAdjacentAddresses({ address: params.address });
+
+//     const adjacentFields: {
+//         top: FieldState | undefined,
+//         bottom: FieldState | undefined,
+//         left: FieldState | undefined,
+//         right: FieldState | undefined,
+//     } = {
+//         top: undefined,
+//         bottom: undefined,
+//         left: undefined,
+//         right: undefined,
+//     };
+
+//     Object.entries(adjacentAddresses).forEach(([position, address]) => {
+//         const field = address ? ((this as any)!.game as BoardModel).state.fields.get(AddressUtils.toKey(address))?.state : undefined;
+//         adjacentFields[position as keyof typeof adjacentFields] = field;
+//     });
+//     return adjacentFields;
+// }
+
+// function getDiagonalFields (params: {
+//     address: Address,
+// }): {
+//     [Diagonal.TopLeft]: FieldState | undefined,
+//     [Diagonal.TopRight]: FieldState | undefined,
+//     [Diagonal.BottomLeft]: FieldState | undefined,
+//     [Diagonal.BottomRight]: FieldState | undefined,
+// } {
+//     if (!(this as any)?.game as any) {
+//         throw new Error('AdjacentFields uses before game initialization')
+//     }
+
+//     const diagonalAddresses = getDiagonalAddresses({ address: params.address });
+
+//     const diagonalFields: {
+//         [Diagonal.TopLeft]: FieldState | undefined,
+//         [Diagonal.TopRight]: FieldState | undefined,
+//         [Diagonal.BottomLeft]: FieldState | undefined,
+//         [Diagonal.BottomRight]: FieldState | undefined,
+//     } = {
+//         [Diagonal.TopLeft]: undefined,
+//         [Diagonal.TopRight]: undefined,
+//         [Diagonal.BottomLeft]: undefined,
+//         [Diagonal.BottomRight]: undefined,
+//     };
+
+//     Object.entries(diagonalAddresses).forEach(([diagonal, address]) => {
+//         const field = address ? ((this as any)!.game as BoardModel)!.state.fields.get(AddressUtils.toKey(address))?.state : undefined;
+//         diagonalFields[diagonal as keyof typeof diagonalFields] = field;
+//     });
+
+//     return diagonalFields;
+// }
+
+interface addressUtils {
+    game?: BoardModel,
+    getAdjacentAddresses: (params: {
+        address: Address;
+    }) => {
+        top: Address | undefined;
+        bottom: Address | undefined;
+        left: Address | undefined;
+        right: Address | undefined;
+    },
+    getAdjacentFields: (params: {
+        address: Address;
+    }) => {
+        top: FieldState | undefined;
+        bottom: FieldState | undefined;
+        left: FieldState | undefined;
+        right: FieldState | undefined;
+    },
+    getDiagonalAddresses: (params: {
+        address: Address;
+    }) => {
+        [Diagonal.TopLeft]: Address | undefined;
+        [Diagonal.TopRight]: Address | undefined;
+        [Diagonal.BottomLeft]: Address | undefined;
+        [Diagonal.BottomRight]: Address | undefined;
+    },
+    getDiagonalFields: (params: {
+        address: Address;
+    }) => {
+        [Diagonal.TopLeft]: FieldState | undefined;
+        [Diagonal.TopRight]: FieldState | undefined;
+        [Diagonal.BottomLeft]: FieldState | undefined;
+        [Diagonal.BottomRight]: FieldState | undefined;
+    }
+}
+const AdjacentFields: addressUtils = {
+    getAdjacentAddresses: getAdjacentAddresses.bind(this),
+    getAdjacentFields(params: {
+        address: Address,
+    }): {
         top: FieldState | undefined,
         bottom: FieldState | undefined,
         left: FieldState | undefined,
         right: FieldState | undefined,
-    } = {
-        top: undefined,
-        bottom: undefined,
-        left: undefined,
-        right: undefined,
-    };
+    } {
+        const game = this.game
+        if (!game) {
+            throw new Error('AdjacentFields uses before game initialization')
+        }
 
-    Object.entries(adjacentAddresses).forEach(([position, address]) => {
-        const field = address ? GameInstance.state.fields.get(AddressUtils.toKey(address))?.state : undefined;
-        adjacentFields[position as keyof typeof adjacentFields] = field;
-    });
-    return adjacentFields;
-}
+        const adjacentAddresses = getAdjacentAddresses({ address: params.address });
 
-const getDiagonalFields = (params: {
-    address: Address,
-}): {
-    [Diagonal.TopLeft]: FieldState | undefined,
-    [Diagonal.TopRight]: FieldState | undefined,
-    [Diagonal.BottomLeft]: FieldState | undefined,
-    [Diagonal.BottomRight]: FieldState | undefined,
-} => {
-    const diagonalAddresses = getDiagonalAddresses({ address: params.address });
+        const adjacentFields: {
+            top: FieldState | undefined,
+            bottom: FieldState | undefined,
+            left: FieldState | undefined,
+            right: FieldState | undefined,
+        } = {
+            top: undefined,
+            bottom: undefined,
+            left: undefined,
+            right: undefined,
+        };
 
-    const diagonalFields: {
+        Object.entries(adjacentAddresses).forEach(([position, address]) => {
+            const field = address ? game.state.fields.get(AddressUtils.toKey(address))?.state : undefined;
+            adjacentFields[position as keyof typeof adjacentFields] = field;
+        });
+        return adjacentFields;
+    },
+    getDiagonalAddresses: getDiagonalAddresses.bind(this),
+    getDiagonalFields(params: {
+        address: Address,
+    }): {
         [Diagonal.TopLeft]: FieldState | undefined,
         [Diagonal.TopRight]: FieldState | undefined,
         [Diagonal.BottomLeft]: FieldState | undefined,
         [Diagonal.BottomRight]: FieldState | undefined,
-    } = {
-        [Diagonal.TopLeft]: undefined,
-        [Diagonal.TopRight]: undefined,
-        [Diagonal.BottomLeft]: undefined,
-        [Diagonal.BottomRight]: undefined,
-    };
+    } {
+        const game = this.game;
+        if (!game) {
+            throw new Error('AdjacentFields uses before game initialization')
+        }
 
-    Object.entries(diagonalAddresses).forEach(([diagonal, address]) => {
-        const field = address ? GameInstance.state.fields.get(AddressUtils.toKey(address))?.state : undefined;
-        diagonalFields[diagonal as keyof typeof diagonalFields] = field;
-    });
+        const diagonalAddresses = getDiagonalAddresses({ address: params.address });
 
-    return diagonalFields;
-}
+        const diagonalFields: {
+            [Diagonal.TopLeft]: FieldState | undefined,
+            [Diagonal.TopRight]: FieldState | undefined,
+            [Diagonal.BottomLeft]: FieldState | undefined,
+            [Diagonal.BottomRight]: FieldState | undefined,
+        } = {
+            [Diagonal.TopLeft]: undefined,
+            [Diagonal.TopRight]: undefined,
+            [Diagonal.BottomLeft]: undefined,
+            [Diagonal.BottomRight]: undefined,
+        };
 
-const AdjacentFields = {
-    getAdjacentAddresses,
-    getAdjacentFields,
-    getDiagonalAddresses,
-    getDiagonalFields,
+        Object.entries(diagonalAddresses).forEach(([diagonal, address]) => {
+            const field = address ? game.state.fields.get(AddressUtils.toKey(address))?.state : undefined;
+            diagonalFields[diagonal as keyof typeof diagonalFields] = field;
+        });
+
+        return diagonalFields;
+    }
 };
 
 export default AdjacentFields;
