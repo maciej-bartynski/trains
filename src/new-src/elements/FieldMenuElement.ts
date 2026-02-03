@@ -111,10 +111,17 @@ class FieldMenuElement extends StatefullElement<FieldMenuState, FieldMenuProps> 
 
         this.buttonsList.innerHTML = '';
 
+        const buildingLabels: Partial<Record<BuildingKind, string>> = {
+            [BuildingKind.CargoPortLeft]: 'port left',
+            [BuildingKind.CargoPortRight]: 'port right',
+            [BuildingKind.CargoPortTop]: 'port top',
+            [BuildingKind.CargoPortBottom]: 'port bottom',
+        };
+
         if (selectedField) {
             this.state.buildingsToBuild.forEach(kind => {
                 const btn = document.createElement('button');
-                btn.innerText = kind;
+                btn.innerText = buildingLabels[kind] ?? kind;
                 btn.onclick = () => {
                     BoardModel.I().onBuildBuilding({
                         address: selectedField,

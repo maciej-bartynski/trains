@@ -108,6 +108,7 @@ export function canBuildLandTrack(
     const anyExistingCenter = Object.values(existingNodesByKind).some(nodes => nodes.has('center'));
 
     // Center always occupies whole field.
+    // Center always occupies whole field.
     if (newNodes.has('center') && hasAnyExistingTrack) {
         return false;
     }

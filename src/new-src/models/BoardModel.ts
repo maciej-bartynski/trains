@@ -261,6 +261,167 @@ class BoardModel {
         this._notifyListeners(PieceEnum.SelectedField)
     }
 
+    private getRailwayIncomingDirections(address: Address): Direction[] {
+        const adjacent = AdjacentFields.getAdjacentAddresses({ address });
+        const incoming: Direction[] = [];
+
+        const hasNode = (orientation: Orientation, node: Direction): boolean => {
+            if (orientation.center && orientation.center[node]) {
+                return true;
+            }
+            const connections = orientation[node];
+            if (!connections) return false;
+            return Object.values(connections).some(Boolean);
+        };
+
+        Object.entries(adjacent).forEach(entry => {
+            const [dir, neighborAddress] = entry as [Direction, Address | undefined];
+            if (!neighborAddress) return;
+            const neighborTracks = this.state[PieceEnum.Tracks].get(AddressUtils.toKey(neighborAddress))?.state.orientations[TrackKind.Railway] ?? null;
+            if (!neighborTracks) return;
+            const opposite = OrientationUtils.OpositeDirections[dir];
+            if (hasNode(neighborTracks, opposite)) {
+                incoming.push(dir);
+            }
+        });
+
+        return incoming;
+    }
+
+    private buildRailwayCenterOrientation(direction: Direction): Orientation {
+        const centerConnections = {
+            [Direction.Top]: direction === Direction.Top,
+            [Direction.Right]: direction === Direction.Right,
+            [Direction.Bottom]: direction === Direction.Bottom,
+            [Direction.Left]: direction === Direction.Left,
+        };
+        const makeEdgeConnections = (self: Direction) => ({
+            [Direction.Top]: self === Direction.Top ? false : false,
+            [Direction.Right]: self === Direction.Right ? false : false,
+            [Direction.Bottom]: self === Direction.Bottom ? false : false,
+            [Direction.Left]: self === Direction.Left ? false : false,
+            center: true,
+        } as Record<Direction | 'center', boolean>);
+
+        return {
+            [Direction.Top]: direction === Direction.Top ? makeEdgeConnections(Direction.Top) : null,
+            [Direction.Right]: direction === Direction.Right ? makeEdgeConnections(Direction.Right) : null,
+            [Direction.Bottom]: direction === Direction.Bottom ? makeEdgeConnections(Direction.Bottom) : null,
+            [Direction.Left]: direction === Direction.Left ? makeEdgeConnections(Direction.Left) : null,
+            center: centerConnections,
+        } as Orientation;
+    }
+
+    private buildRailwaySwitchOrientation(directions: Direction[]): Orientation {
+        const nodes = new Set(directions);
+        const makeConnections = (self: Direction) => {
+            const connections: Record<Direction | 'center', boolean> = {
+                [Direction.Top]: false,
+                [Direction.Right]: false,
+                [Direction.Bottom]: false,
+                [Direction.Left]: false,
+                center: false,
+            };
+            directions.forEach(dir => {
+                if (dir !== self) {
+                    connections[dir] = true;
+                }
+            });
+            return connections;
+        };
+
+        return {
+            [Direction.Top]: nodes.has(Direction.Top) ? makeConnections(Direction.Top) : null,
+            [Direction.Right]: nodes.has(Direction.Right) ? makeConnections(Direction.Right) : null,
+            [Direction.Bottom]: nodes.has(Direction.Bottom) ? makeConnections(Direction.Bottom) : null,
+            [Direction.Left]: nodes.has(Direction.Left) ? makeConnections(Direction.Left) : null,
+            center: null,
+        } as Orientation;
+    }
+
+    private updateRailwayCenterConnections(address: Address) {
+        const data = this.getStateByAddress(address);
+        const buildingKind = data?.buildings?.state.kind;
+        if (!data || !buildingKind) return;
+
+        const isWarehouse = buildingKind === BuildingKind.RoadWarehouse;
+        const isCargoPort = [
+            BuildingKind.CargoPortTop,
+            BuildingKind.CargoPortBottom,
+            BuildingKind.CargoPortLeft,
+            BuildingKind.CargoPortRight,
+        ].includes(buildingKind);
+
+        if (!isWarehouse && !isCargoPort) return;
+
+        const incoming = this.getRailwayIncomingDirections(address);
+
+        let allowedIncoming = incoming;
+
+        if (isWarehouse) {
+            const roadOrientation = data.tracks?.state.orientations[TrackKind.Road];
+            if (!roadOrientation?.center) return;
+            const roadDir = (Object.entries(roadOrientation.center)
+                .find(([, isConnected]) => isConnected)?.[0] ?? null) as Direction | null;
+            if (!roadDir) return;
+            allowedIncoming = incoming.filter(dir => dir !== roadDir);
+        }
+
+        if (isCargoPort) {
+            let allowedDir: Direction | null = null;
+            switch (buildingKind) {
+                case BuildingKind.CargoPortTop:
+                    allowedDir = Direction.Top;
+                    break;
+                case BuildingKind.CargoPortBottom:
+                    allowedDir = Direction.Bottom;
+                    break;
+                case BuildingKind.CargoPortLeft:
+                    allowedDir = Direction.Left;
+                    break;
+                case BuildingKind.CargoPortRight:
+                    allowedDir = Direction.Right;
+                    break;
+            }
+            if (!allowedDir) return;
+            allowedIncoming = incoming.filter(dir => dir === allowedDir);
+        }
+
+        if (allowedIncoming.length === 0) return;
+
+        const firstDirection = allowedIncoming[0];
+        if (!firstDirection) {
+            return;
+        }
+
+        const newRailwayOrientation = allowedIncoming.length === 1 || isCargoPort
+            ? this.buildRailwayCenterOrientation(firstDirection)
+            : this.buildRailwaySwitchOrientation(allowedIncoming);
+
+        const key = AddressUtils.toKey(address);
+        const existingTracks: Record<TrackKind, Orientation | null> = Object.assign({}, data.tracks?.state.orientations ?? {
+            [TrackKind.Railway]: null,
+            [TrackKind.Road]: null,
+            [TrackKind.Sail]: null,
+            [TrackKind.Fly]: null,
+        });
+
+        existingTracks[TrackKind.Railway] = newRailwayOrientation;
+
+        let trackModel = this.state[PieceEnum.Tracks].get(key);
+        if (!trackModel) {
+            this.state[PieceEnum.Tracks].set(key, new TrackModel({
+                _id: key,
+                address,
+                orientations: existingTracks
+            }));
+        } else {
+            trackModel.updateOrientation(existingTracks);
+        }
+
+        this._notifyListeners(PieceEnum.Tracks);
+    }
+
     public onUncoverField(params: { address: Address }) {
         const { address } = params;
         const adjacentAddresses = AdjacentFields.getAdjacentAddresses({ address });
@@ -305,6 +466,16 @@ class BoardModel {
                     production: null,
                     storage: null,
                 }));
+            }
+
+            if ([
+                BuildingKind.RoadWarehouse,
+                BuildingKind.CargoPortTop,
+                BuildingKind.CargoPortBottom,
+                BuildingKind.CargoPortLeft,
+                BuildingKind.CargoPortRight,
+            ].includes(buildingKind)) {
+                this.updateRailwayCenterConnections(address);
             }
 
             this._notifyListeners(PieceEnum.Buildings);
@@ -365,6 +536,14 @@ class BoardModel {
             }
 
             this._notifyListeners(PieceEnum.Tracks);
+
+            if (params.kind === TrackKind.Railway) {
+                Object.values(AdjacentFields.getAdjacentAddresses({ address })).forEach(adjacentAddress => {
+                    if (adjacentAddress) {
+                        this.updateRailwayCenterConnections(adjacentAddress);
+                    }
+                });
+            }
         }
     }
 }

@@ -63,12 +63,31 @@ class BuildingElement extends StatefullElement<{
                 color = 'gray'
                 break;
             }
+            case BuildingKind.RailwayTerminus: {
+                color = 'purple'
+                break;
+            }
             case BuildingKind.RailwayStation: {
                 color = 'black'
                 break;
             }
             case BuildingKind.Harbour: {
                 color = 'pink'
+                break;
+            }
+            case BuildingKind.RoadGarage: {
+                color = 'dimgray'
+                break;
+            }
+            case BuildingKind.RoadWarehouse: {
+                color = 'saddlebrown'
+                break;
+            }
+            case BuildingKind.CargoPortTop:
+            case BuildingKind.CargoPortBottom:
+            case BuildingKind.CargoPortLeft:
+            case BuildingKind.CargoPortRight: {
+                color = 'deepskyblue'
                 break;
             }
 
@@ -110,6 +129,20 @@ class BuildingElement extends StatefullElement<{
         }
 
         this.style.backgroundColor = color;
+        this.style.border = 'none';
+
+        if (this.props.kind === BuildingKind.CargoPortTop) {
+            this.style.borderTop = '3px solid black';
+        }
+        if (this.props.kind === BuildingKind.CargoPortBottom) {
+            this.style.borderBottom = '3px solid black';
+        }
+        if (this.props.kind === BuildingKind.CargoPortLeft) {
+            this.style.borderLeft = '3px solid black';
+        }
+        if (this.props.kind === BuildingKind.CargoPortRight) {
+            this.style.borderRight = '3px solid black';
+        }
         this.appendChild(this.styleEl);
     }
 

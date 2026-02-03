@@ -2,9 +2,18 @@ enum BuildingKind {
     // train buildings
     RailwayStation = 'railway-station',
     RailwayGarage = 'railway-garage',
+    RailwayTerminus = 'railway-terminus',
 
     // ship buildings
     Harbour = 'harbour',
+    CargoPortTop = 'cargo-port-top',
+    CargoPortBottom = 'cargo-port-bottom',
+    CargoPortLeft = 'cargo-port-left',
+    CargoPortRight = 'cargo-port-right',
+
+    // road buildings
+    RoadGarage = 'road-garage',
+    RoadWarehouse = 'road-warehouse',
 
     // factories: raw resources
     WoodFactory = 'wood-factory',

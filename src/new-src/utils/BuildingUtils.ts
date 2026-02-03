@@ -57,6 +57,109 @@ export function canBuildRailwayGarage(address: Address, game: BoardModel) {
     return false;
 }
 
+export function canBuildRailwayTerminus(address: Address, game: BoardModel) {
+    const {
+        field,
+        buildings
+    } = game.getStateByAddress(address) ?? {};
+
+    if (buildings) {
+        return false;
+    }
+
+    if ([TerrainKind.Water, TerrainKind.WaterCold, undefined, null].includes(field?.state.terrain)) {
+        return false;
+    }
+
+    return TrackUtils.isTrackCenter(TrackKind.Railway, address, game);
+}
+
+export function canBuildRoadGarage(address: Address, game: BoardModel) {
+    const {
+        field,
+        buildings
+    } = game.getStateByAddress(address) ?? {};
+
+    if (buildings) {
+        return false;
+    }
+
+    if ([TerrainKind.Water, TerrainKind.WaterCold, undefined, null].includes(field?.state.terrain)) {
+        return false;
+    }
+
+    return TrackUtils.isTrackCenter(TrackKind.Road, address, game);
+}
+
+export function canBuildRoadWarehouse(address: Address, game: BoardModel) {
+    const {
+        field,
+        buildings
+    } = game.getStateByAddress(address) ?? {};
+
+    if (buildings) {
+        return false;
+    }
+
+    if ([TerrainKind.Water, TerrainKind.WaterCold, undefined, null].includes(field?.state.terrain)) {
+        return false;
+    }
+
+    return TrackUtils.isTrackCenter(TrackKind.Road, address, game);
+}
+
+const isSailStraight = (orientation: Orientation | null): 'horizontal' | 'vertical' | null => {
+    if (!orientation || orientation.center) {
+        return null;
+    }
+
+    const edges = new Set<string>();
+    Object.entries(orientation).forEach(entry => {
+        const [fromNode, connections] = entry as [TrackNode, TrackNodeConnections | null];
+        if (fromNode === 'center' || !connections) return;
+        Object.entries(connections).forEach(conn => {
+            const [toNode, isConnected] = conn as [TrackNode, boolean];
+            if (!isConnected || toNode === 'center') return;
+            edges.add([fromNode, toNode].sort().join('|'));
+        });
+    });
+
+    const hasVertical = edges.has([Direction.Top, Direction.Bottom].sort().join('|'));
+    const hasHorizontal = edges.has([Direction.Left, Direction.Right].sort().join('|'));
+    if (hasVertical === hasHorizontal) {
+        return null;
+    }
+    if (edges.size !== 1) {
+        return null;
+    }
+    return hasHorizontal ? 'horizontal' : 'vertical';
+};
+
+export function canBuildCargoPort(address: Address, game: BoardModel, side: 'top' | 'bottom' | 'left' | 'right') {
+    const {
+        field,
+        buildings,
+        tracks
+    } = game.getStateByAddress(address) ?? {};
+
+    if (buildings) {
+        return false;
+    }
+
+    if ([TerrainKind.Water, TerrainKind.WaterCold, undefined, null].includes(field?.state.terrain)) {
+        return false;
+    }
+
+    const sailOrientation = tracks?.state.orientations[TrackKind.Sail] ?? null;
+    const straight = isSailStraight(sailOrientation);
+    if (!straight) return false;
+
+    if (straight === 'horizontal') {
+        return side === 'top' || side === 'bottom';
+    }
+    return side === 'left' || side === 'right';
+}
+
 export function canBuildHarbour(address: Address, game: BoardModel, options: {
     seaAddress: Address
 }): boolean {
@@ -269,6 +372,10 @@ interface buildingUtils {
     canBuild(params: CanBuildParams): boolean;
     canBuildRailwayStation(address: Address, game: BoardModel): boolean;
     canBuildRailwayGarage(address: Address, game: BoardModel): boolean;
+    canBuildRailwayTerminus(address: Address, game: BoardModel): boolean;
+    canBuildRoadGarage(address: Address, game: BoardModel): boolean;
+    canBuildRoadWarehouse(address: Address, game: BoardModel): boolean;
+    canBuildCargoPort(address: Address, game: BoardModel, side: 'top' | 'bottom' | 'left' | 'right'): boolean;
     canBuildHarbour(address: Address, game: BoardModel, options: { seaAddress: Address }): boolean;
     canBuildWoodFactory(address: Address, game: BoardModel): boolean;
     canBuildIronFactory(address: Address, game: BoardModel): boolean;
@@ -300,10 +407,33 @@ const BuildingUtils: buildingUtils = {
             case BuildingKind.RailwayGarage: {
                 return this.canBuildRailwayGarage(address, this.game);
             }
+            case BuildingKind.RailwayTerminus: {
+                return this.canBuildRailwayTerminus(address, this.game);
+            }
 
             // ship buildings
             case BuildingKind.Harbour: {
                 return this.canBuildHarbour(address, this.game, options)
+            }
+            case BuildingKind.CargoPortTop: {
+                return this.canBuildCargoPort(address, this.game, 'top');
+            }
+            case BuildingKind.CargoPortBottom: {
+                return this.canBuildCargoPort(address, this.game, 'bottom');
+            }
+            case BuildingKind.CargoPortLeft: {
+                return this.canBuildCargoPort(address, this.game, 'left');
+            }
+            case BuildingKind.CargoPortRight: {
+                return this.canBuildCargoPort(address, this.game, 'right');
+            }
+
+            // road buildings
+            case BuildingKind.RoadGarage: {
+                return this.canBuildRoadGarage(address, this.game);
+            }
+            case BuildingKind.RoadWarehouse: {
+                return this.canBuildRoadWarehouse(address, this.game);
             }
 
             // raw materials buildings
@@ -340,6 +470,10 @@ const BuildingUtils: buildingUtils = {
     },
     canBuildRailwayStation,
     canBuildRailwayGarage,
+    canBuildRailwayTerminus,
+    canBuildRoadGarage,
+    canBuildRoadWarehouse,
+    canBuildCargoPort,
     canBuildHarbour,
     canBuildWoodFactory,
     canBuildIronFactory,
