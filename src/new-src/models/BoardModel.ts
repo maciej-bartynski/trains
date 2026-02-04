@@ -339,6 +339,7 @@ class BoardModel {
         } as Orientation;
     }
 
+
     private updateRailwayCenterConnections(address: Address) {
         const data = this.getStateByAddress(address);
         const buildingKind = data?.buildings?.state.kind;
@@ -506,10 +507,17 @@ class BoardModel {
                 [TrackKind.Fly]: null,
             });
 
+            const hasBuilding = !!this.getStateByAddress(address)?.buildings;
+            const mergedOrientation = !hasBuilding
+                ? TrackUtils.mergeEdgeToCenter(existingTracks[params.kind] ?? null, params.orientation)
+                : null;
+
             const toBeUpdatedKind = existingTracks[params.kind];
 
-            if (!toBeUpdatedKind) {
-                existingTracks[params.kind] = params.orientation
+            if (mergedOrientation) {
+                existingTracks[params.kind] = mergedOrientation;
+            } else if (!toBeUpdatedKind) {
+                existingTracks[params.kind] = params.orientation;
             } else {
                 existingTracks = OrientationUtils.mergeOrientations({
                     orientations: existingTracks,
@@ -523,7 +531,7 @@ class BoardModel {
                 existingTracks[TrackKind.Sail] = TrackUtils.normalizeSailOrientation(existingTracks[TrackKind.Sail]!);
             }
 
-            let model = this.state[PieceEnum.Tracks].get(key);
+            const model = this.state[PieceEnum.Tracks].get(key);
 
             if (!model) {
                 this.state[PieceEnum.Tracks].set(key, new TrackModel({

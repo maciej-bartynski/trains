@@ -81,6 +81,7 @@ class MenuBuildSail extends StatefullElement<{}, PropsMenuBuildSail> {
                 });
 
                 this.buttonsList.innerHTML = '';
+
                 variants.forEach(data => {
                     const { can, variant, orientation } = data;
                     if (can) {

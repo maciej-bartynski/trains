@@ -69,11 +69,13 @@ class TrackElement extends StatefullElement<{}, TrackModel['state']> {
 
         Object.entries(orientations).forEach(([_trackKind, orientation]) => {
             const trackKind = _trackKind as TrackKind;
+
             if (orientation) {
                 /**
                  * Has tracks of current kind
                  */
                 const layerElement = this[trackKind];
+                layerElement.innerHTML = '';
 
                 if (orientation.center) {
                     /**

@@ -106,15 +106,51 @@ export function canBuildLandTrack(
 
     const hasAnyExistingTrack = Object.values(existingNodesByKind).some(nodes => nodes.size > 0);
     const anyExistingCenter = Object.values(existingNodesByKind).some(nodes => nodes.has('center'));
+    const existingSailOrientation = (existingOrientations as Record<TrackKind, Orientation | null>)[TrackKind.Sail] ?? null;
+    if (existingSailOrientation && !existingSailOrientation.center) {
+        const sailNodes = getOccupiedNodes(existingSailOrientation);
+        const hasAllNodes = [Direction.Top, Direction.Right, Direction.Bottom, Direction.Left].every(node => sailNodes.has(node));
+        if (hasAllNodes) {
+            return false;
+        }
+    }
 
-    // Center always occupies whole field.
-    // Center always occupies whole field.
+    const isEdgeToCenter = (orientation?: Orientation | null): Direction | null => {
+        if (!orientation || !orientation.center) return null;
+        const centerDirections = Object.entries(orientation.center)
+            .filter(([, isConnected]) => isConnected)
+            .map(([dir]) => dir as Direction);
+        if (centerDirections.length !== 1) return null;
+        const edgeDir = centerDirections[0] ?? null;
+        if (!edgeDir) return null;
+        const edgeConnections = orientation[edgeDir];
+        if (!edgeConnections) return null;
+        const edgeHasOnlyCenter = Object.entries(edgeConnections).every(([key, value]) => {
+            if (key === 'center') return value === true;
+            return value === false;
+        });
+        if (!edgeHasOnlyCenter) return null;
+        return edgeDir;
+    };
+
+    // Center always occupies whole field (except for the 1x edge-to-center merge case).
+    let allowCenterMerge = false;
     if (newNodes.has('center') && hasAnyExistingTrack) {
-        return false;
+        const existingSameKind = (existingOrientations as Record<TrackKind, Orientation | null>)[trackKind] ?? null;
+        const existingEdgeDir = isEdgeToCenter(existingSameKind);
+        const newEdgeDir = isEdgeToCenter(options.orientations);
+        const otherKindsExist = Object.entries(existingNodesByKind).some(([kind, nodes]) => {
+            if (kind === trackKind) return false;
+            return nodes.size > 0;
+        });
+        if (otherKindsExist || !existingEdgeDir || !newEdgeDir || existingEdgeDir === newEdgeDir) {
+            return false;
+        }
+        allowCenterMerge = true;
     }
 
     // If something already uses center, nothing else can be built.
-    if (anyExistingCenter) {
+    if (anyExistingCenter && !allowCenterMerge) {
         return false;
     }
 
@@ -215,6 +251,60 @@ const normalizeSailOrientation = (orientation: Orientation): Orientation => {
     return allConnections as Orientation;
 };
 
+const isEdgeToCenter = (orientation: Orientation | null): Direction | null => {
+    if (!orientation || !orientation.center) return null;
+    const centerDirections = Object.entries(orientation.center)
+        .filter(([, isConnected]) => isConnected)
+        .map(([dir]) => dir as Direction);
+    if (centerDirections.length !== 1) return null;
+    const edgeDir = centerDirections[0] ?? null;
+    if (!edgeDir) return null;
+    const edgeConnections = orientation[edgeDir];
+    if (!edgeConnections) return null;
+    const edgeHasOnlyCenter = Object.entries(edgeConnections).every(([key, value]) => {
+        if (key === 'center') return value === true;
+        return value === false;
+    });
+    if (!edgeHasOnlyCenter) return null;
+    return edgeDir;
+};
+
+const buildEdgeToEdgeOrientation = (a: Direction, b: Direction): Orientation => {
+    const connectionsFor = (other: Direction) => ({
+        [Direction.Top]: false,
+        [Direction.Right]: false,
+        [Direction.Bottom]: false,
+        [Direction.Left]: false,
+        center: false,
+        [other]: true,
+    } as Record<Direction | 'center', boolean>);
+
+    return {
+        [Direction.Top]: a === Direction.Top || b === Direction.Top
+            ? connectionsFor(a === Direction.Top ? b : a)
+            : null,
+        [Direction.Right]: a === Direction.Right || b === Direction.Right
+            ? connectionsFor(a === Direction.Right ? b : a)
+            : null,
+        [Direction.Bottom]: a === Direction.Bottom || b === Direction.Bottom
+            ? connectionsFor(a === Direction.Bottom ? b : a)
+            : null,
+        [Direction.Left]: a === Direction.Left || b === Direction.Left
+            ? connectionsFor(a === Direction.Left ? b : a)
+            : null,
+        center: null,
+    } as Orientation;
+};
+
+const mergeEdgeToCenter = (existing: Orientation | null, incoming: Orientation): Orientation | null => {
+    const prevEdgeDir = isEdgeToCenter(existing);
+    const newEdgeDir = isEdgeToCenter(incoming);
+    if (prevEdgeDir && newEdgeDir && prevEdgeDir !== newEdgeDir) {
+        return buildEdgeToEdgeOrientation(prevEdgeDir, newEdgeDir);
+    }
+    return null;
+};
+
 export function canBuildSail(
     address: Address,
     game: BoardModel,
@@ -283,19 +373,35 @@ export function canBuildSail(
     const hasAnyExistingTrack = Object.values(existingNodesByKind).some(nodes => nodes.size > 0);
     const anyExistingCenter = Object.values(existingNodesByKind).some(nodes => nodes.has('center'));
 
-    // Center always occupies whole field.
+    // Center always occupies whole field (except for 1x edge-to-center merge case).
+    let allowCenterMerge = false;
     if (newNodes.has('center') && hasAnyExistingTrack) {
-        return false;
+        const existingSameKind = (existingOrientations as Record<TrackKind, Orientation | null>)[TrackKind.Sail] ?? null;
+        const existingEdgeDir = isEdgeToCenter(existingSameKind);
+        const newEdgeDir = isEdgeToCenter(newOrientation);
+        const otherKindsExist = Object.entries(existingNodesByKind).some(([kind, nodes]) => {
+            if (kind === TrackKind.Sail) return false;
+            return nodes.size > 0;
+        });
+        if (otherKindsExist || !existingEdgeDir || !newEdgeDir || existingEdgeDir === newEdgeDir) {
+            return false;
+        }
+        allowCenterMerge = true;
     }
 
     // If something already uses center, nothing else can be built.
-    if (anyExistingCenter) {
+    if (anyExistingCenter && !allowCenterMerge) {
         return false;
     }
 
     // Duplicate only if ALL new edges already exist for SAME kind.
     const sameKindEdges = existingEdgesByKind[TrackKind.Sail];
-    if (sameKindEdges && isSubset(newEdges, sameKindEdges)) {
+    const newIsVertical = newEdges.size === 1 && newEdges.has([Direction.Top, Direction.Bottom].sort().join('|'));
+    const newIsHorizontal = newEdges.size === 1 && newEdges.has([Direction.Left, Direction.Right].sort().join('|'));
+    const existingHasVertical = sameKindEdges?.has([Direction.Top, Direction.Bottom].sort().join('|')) ?? false;
+    const existingHasHorizontal = sameKindEdges?.has([Direction.Left, Direction.Right].sort().join('|')) ?? false;
+    const isPerpendicularStraight = (newIsVertical && existingHasHorizontal) || (newIsHorizontal && existingHasVertical);
+    if (sameKindEdges && isSubset(newEdges, sameKindEdges) && !isPerpendicularStraight) {
         return false;
     }
 
@@ -346,7 +452,14 @@ export function canBuildSail(
         return neighborNodes.has(opposite);
     });
     if (newNodes.has('center')) {
+        if (allowCenterMerge) {
+            return true;
+        }
         return connectsToWater || connectsToSailFromNeighbor;
+    }
+
+    if (isPerpendicularStraight) {
+        return true;
     }
 
     if (!connectsToWater && !connectsToSailOnSameTile && !connectsToSailFromNeighbor) {
@@ -797,6 +910,7 @@ interface trackUtils {
     canBuildLandTrack(address: Address, game: BoardModel, trackKind: TrackKind, options: { orientations: Orientation }): boolean;
     canBuildSail(address: Address, game: BoardModel, options: { orientations: Orientation }): boolean;
     normalizeSailOrientation(orientation: Orientation): Orientation;
+    mergeEdgeToCenter(existing: Orientation | null, incoming: Orientation): Orientation | null;
 }
 
 const TrackUtils: trackUtils = {
@@ -833,7 +947,8 @@ const TrackUtils: trackUtils = {
     isTrackCenter,
     isTrackStraight,
     TrackVariants,
-    normalizeSailOrientation
+    normalizeSailOrientation,
+    mergeEdgeToCenter
 }
 
 export default TrackUtils;
