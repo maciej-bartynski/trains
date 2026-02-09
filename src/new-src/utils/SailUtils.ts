@@ -383,7 +383,8 @@ const getIsSailOrientationAdjacentToWater = (params: {
             ? OrientationUtils.NormalizedEmptyOrientation
             : adjacentSailOrientation!;
 
-        const waterConnections = adjacentSailOrientation[node];
+        const opositeNode = OpositeDirection[node];
+        const waterConnections = adjacentSailOrientation[opositeNode];
         const hasAdjacentWaterConnections = !OrientationUtils.isEmptyNodeConnections(waterConnections);
         return hasAdjacentWaterConnections
     });

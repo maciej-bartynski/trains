@@ -381,11 +381,13 @@ export function canBuildSail(
     });
 
     if (isNewOrientationAllowed) {
-        return SailUtils.getIsSailOrientationAdjacentToWater({
+        const isAdjacentToWater = SailUtils.getIsSailOrientationAdjacentToWater({
             game,
             address,
             sailOrientation: demandedOrientation
-        })
+        });
+
+        return isAdjacentToWater;
     }
 
     return false;

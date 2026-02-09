@@ -71,8 +71,6 @@ class MenuBuildSail extends StatefullElement<{}, PropsMenuBuildSail> {
                 Object.entries(SailUtils.Orientations).forEach(variantConfigEntry => {
                     const [variantName, variantConfig] = variantConfigEntry as [SailOrientationName, typeof SailUtils.Orientations[keyof typeof SailUtils.Orientations]];
 
-                    console.log("variant", variantName, variantConfig)
-
                     const canBuildVariant = TrackUtils.canBuild({
                         address: selectedField,
                         trackKind: TrackKind.Sail,
