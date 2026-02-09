@@ -7,11 +7,11 @@ import Direction from "../enums/Direction.js";
 import OrientationUtils from "./OrientationUtils.js";
 import SailUtils from "./SailUtils.js";
 import RoadUtils from "./RoadUtils.js";
+import RailwayUtils from "./RailwayUtils.js";
 
-export function canBuildLandTrack(
+function canBuildRailway(
     address: Address,
     game: BoardModel,
-    trackKind: TrackKind,
     options: {
         orientation: Orientation
     }) {
@@ -32,143 +32,13 @@ export function canBuildLandTrack(
 
     type TrackNode = Direction | 'center';
 
-    const getOccupiedNodes = (orientation?: Orientation | null): Set<TrackNode> => {
-        const occupied = new Set<TrackNode>();
-        if (!orientation) return occupied;
-
-        if (orientation.center) {
-            occupied.add('center');
-            Object.entries(orientation.center).forEach(([dir, isConnected]) => {
-                if (isConnected) occupied.add(dir as Direction);
-            });
-        }
-
-        Object.entries(orientation).forEach(([node, connections]) => {
-            if (node === 'center' || !connections) return;
-            const hasConnection = Object.values(connections).some(Boolean);
-            if (hasConnection) occupied.add(node as Direction);
-            if ((connections as Record<string, boolean>)['center']) occupied.add('center');
-        });
-
-        return occupied;
-    };
-
-    const getEdges = (orientation?: Orientation | null): Set<string> => {
-        const edges = new Set<string>();
-        if (!orientation) return edges;
-
-        const addEdge = (a: TrackNode, b: TrackNode) => {
-            const key = [a, b].sort().join('|'); // left-top == top-left
-            edges.add(key);
-        };
-
-        if (orientation.center) {
-            Object.entries(orientation.center).forEach(([dir, isConnected]) => {
-                if (isConnected) addEdge('center', dir as Direction);
-            });
-        }
-
-        Object.entries(orientation).forEach(([fromNode, connections]) => {
-            if (fromNode === 'center' || !connections) return;
-            Object.entries(connections).forEach(([toNode, isConnected]) => {
-                if (isConnected) addEdge(fromNode as Direction, toNode as TrackNode);
-            });
-        });
-
-        return edges;
-    };
-
-    const isSubset = (subset: Set<string>, superset: Set<string>) => {
-        for (const v of subset) {
-            if (!superset.has(v)) return false;
-        }
-        return true;
-    };
-
-    const newNodes = getOccupiedNodes(options.orientation);
-    const newEdges = getEdges(options.orientation);
-    const existingOrientations = Object.assign({}, tracks?.state.orientations ?? {});
-
-    const existingNodesByKind = Object.entries(existingOrientations).reduce<Record<string, Set<TrackNode>>>(
-        (acc, [kind, orientation]) => {
-            acc[kind] = getOccupiedNodes(orientation as Orientation | null);
-            return acc;
-        },
-        {}
+    const canBuild = RailwayUtils.canBuildRailway(
+        options.orientation,
+        address,
+        game
     );
 
-    const existingEdgesByKind = Object.entries(existingOrientations).reduce<Record<string, Set<string>>>(
-        (acc, [kind, orientation]) => {
-            acc[kind] = getEdges(orientation as Orientation | null);
-            return acc;
-        },
-        {}
-    );
-
-    const hasAnyExistingTrack = Object.values(existingNodesByKind).some(nodes => nodes.size > 0);
-    const anyExistingCenter = Object.values(existingNodesByKind).some(nodes => nodes.has('center'));
-    const existingSailOrientation = (existingOrientations as Record<TrackKind, Orientation | null>)[TrackKind.Sail] ?? null;
-    if (existingSailOrientation && !existingSailOrientation.center) {
-        const sailNodes = getOccupiedNodes(existingSailOrientation);
-        const hasAllNodes = [Direction.Top, Direction.Right, Direction.Bottom, Direction.Left].every(node => sailNodes.has(node));
-        if (hasAllNodes) {
-            return false;
-        }
-    }
-
-    const isEdgeToCenter = (orientation?: Orientation | null): Direction | null => {
-        if (!orientation || !orientation.center) return null;
-        const centerDirections = Object.entries(orientation.center)
-            .filter(([, isConnected]) => isConnected)
-            .map(([dir]) => dir as Direction);
-        if (centerDirections.length !== 1) return null;
-        const edgeDir = centerDirections[0] ?? null;
-        if (!edgeDir) return null;
-        const edgeConnections = orientation[edgeDir];
-        if (!edgeConnections) return null;
-        const edgeHasOnlyCenter = Object.entries(edgeConnections).every(([key, value]) => {
-            if (key === 'center') return value === true;
-            return value === false;
-        });
-        if (!edgeHasOnlyCenter) return null;
-        return edgeDir;
-    };
-
-    // Center always occupies whole field (except for the 1x edge-to-center merge case).
-    let allowCenterMerge = false;
-    if (newNodes.has('center') && hasAnyExistingTrack) {
-        const existingSameKind = (existingOrientations as Record<TrackKind, Orientation | null>)[trackKind] ?? null;
-        const existingEdgeDir = isEdgeToCenter(existingSameKind);
-        const newEdgeDir = isEdgeToCenter(options.orientation);
-        const otherKindsExist = Object.entries(existingNodesByKind).some(([kind, nodes]) => {
-            if (kind === trackKind) return false;
-            return nodes.size > 0;
-        });
-        if (otherKindsExist || !existingEdgeDir || !newEdgeDir || existingEdgeDir === newEdgeDir) {
-            return false;
-        }
-        allowCenterMerge = true;
-    }
-
-    // If something already uses center, nothing else can be built.
-    if (anyExistingCenter && !allowCenterMerge) {
-        return false;
-    }
-
-    // Duplicate only if ALL new edges already exist for SAME kind.
-    const sameKindEdges = existingEdgesByKind[trackKind];
-    if (sameKindEdges && isSubset(newEdges, sameKindEdges)) {
-        return false;
-    }
-
-    // Different track kinds cannot share any node.
-    for (const [existingKind, existingNodes] of Object.entries(existingNodesByKind)) {
-        if (existingKind === trackKind) continue;
-        const overlaps = [...newNodes].some(node => existingNodes.has(node));
-        if (overlaps) return false;
-    }
-
-    return true;
+    return canBuild;
 }
 
 function canBuildRoad(
@@ -216,109 +86,6 @@ function canBuildRoad(
 
     return isNewOrientationAllowed;
 }
-
-const getOccupiedNodes = (orientation?: Orientation | null): Set<TrackNode> => {
-    const occupied = new Set<TrackNode>();
-    if (!orientation) return occupied;
-
-    if (orientation.center) {
-        occupied.add('center');
-        Object.entries(orientation.center).forEach(([dir, isConnected]) => {
-            if (isConnected) occupied.add(dir as Direction);
-        });
-    }
-
-    Object.entries(orientation).forEach(([node, connections]) => {
-        if (node === 'center' || !connections) return;
-        const hasConnection = Object.values(connections).some(Boolean);
-        if (hasConnection) occupied.add(node as Direction);
-        if ((connections as Record<string, boolean>)['center']) occupied.add('center');
-    });
-
-    return occupied;
-};
-
-const normalizeSailOrientation = (orientation: Orientation): Orientation => {
-    if (orientation.center) {
-        return orientation;
-    }
-
-    const nodes = [...getOccupiedNodes(orientation)].filter(node => node !== 'center') as Direction[];
-    const allConnections: OrientationGeneral = {
-        [Direction.Top]: null,
-        [Direction.Right]: null,
-        [Direction.Bottom]: null,
-        [Direction.Left]: null,
-        'center': null,
-    };
-
-    nodes.forEach(node => {
-        const connections: TrackNodeConnections = {};
-        nodes.forEach(other => {
-            if (other !== node) {
-                connections[other] = true;
-            }
-        });
-        connections.center = false;
-        allConnections[node] = connections;
-    });
-
-    return allConnections as Orientation;
-};
-
-const isEdgeToCenter = (orientation: Orientation | null): Direction | null => {
-    if (!orientation || !orientation.center) return null;
-    const centerDirections = Object.entries(orientation.center)
-        .filter(([, isConnected]) => isConnected)
-        .map(([dir]) => dir as Direction);
-    if (centerDirections.length !== 1) return null;
-    const edgeDir = centerDirections[0] ?? null;
-    if (!edgeDir) return null;
-    const edgeConnections = orientation[edgeDir];
-    if (!edgeConnections) return null;
-    const edgeHasOnlyCenter = Object.entries(edgeConnections).every(([key, value]) => {
-        if (key === 'center') return value === true;
-        return value === false;
-    });
-    if (!edgeHasOnlyCenter) return null;
-    return edgeDir;
-};
-
-const buildEdgeToEdgeOrientation = (a: Direction, b: Direction): Orientation => {
-    const connectionsFor = (other: Direction) => ({
-        [Direction.Top]: false,
-        [Direction.Right]: false,
-        [Direction.Bottom]: false,
-        [Direction.Left]: false,
-        center: false,
-        [other]: true,
-    } as Record<Direction | 'center', boolean>);
-
-    return {
-        [Direction.Top]: a === Direction.Top || b === Direction.Top
-            ? connectionsFor(a === Direction.Top ? b : a)
-            : null,
-        [Direction.Right]: a === Direction.Right || b === Direction.Right
-            ? connectionsFor(a === Direction.Right ? b : a)
-            : null,
-        [Direction.Bottom]: a === Direction.Bottom || b === Direction.Bottom
-            ? connectionsFor(a === Direction.Bottom ? b : a)
-            : null,
-        [Direction.Left]: a === Direction.Left || b === Direction.Left
-            ? connectionsFor(a === Direction.Left ? b : a)
-            : null,
-        center: null,
-    } as Orientation;
-};
-
-const mergeEdgeToCenter = (existing: Orientation | null, incoming: Orientation): Orientation | null => {
-    const prevEdgeDir = isEdgeToCenter(existing);
-    const newEdgeDir = isEdgeToCenter(incoming);
-    if (prevEdgeDir && newEdgeDir && prevEdgeDir !== newEdgeDir) {
-        return buildEdgeToEdgeOrientation(prevEdgeDir, newEdgeDir);
-    }
-    return null;
-};
 
 const getOrientationOfKind = (params: {
     kind: TrackKind,
@@ -413,236 +180,6 @@ type CanBuildParams = {
     options: {
         orientation: Orientation
     }
-}
-
-enum TrackVariantName {
-    Vertical = 'vertical',
-    Horizontal = 'horizontal',
-    TopRight = 'top-right',
-    RightBottom = 'right-bottom',
-    BottomLeft = 'bottom-left',
-    LeftTop = 'left-top',
-    CenterTop = 'center-top',
-    CenterRight = 'center-right',
-    CenterBottom = 'center-bottom',
-    CenterLeft = 'center-left'
-}
-
-const TRUE = true as true;
-const FALSE = false as false;
-
-const TrackVariantVertical = {
-    variant: TrackVariantName.Vertical,
-    orientation: {
-        [Direction.Top]: {
-            [Direction.Right]: FALSE,
-            [Direction.Bottom]: TRUE,
-            [Direction.Left]: FALSE,
-            'center': FALSE,
-        },
-        [Direction.Right]: null,
-        [Direction.Bottom]: {
-            [Direction.Top]: TRUE,
-            [Direction.Right]: FALSE,
-            [Direction.Left]: FALSE,
-            'center': FALSE,
-        },
-        [Direction.Left]: null,
-        'center': null,
-    }
-}
-const TrackVariantHorizontal = {
-    variant: TrackVariantName.Horizontal,
-    orientation: {
-        [Direction.Top]: null,
-        [Direction.Bottom]: null,
-        [Direction.Right]: {
-            [Direction.Top]: FALSE,
-            [Direction.Bottom]: FALSE,
-            [Direction.Left]: TRUE,
-            'center': FALSE,
-        },
-        [Direction.Left]: {
-            [Direction.Top]: FALSE,
-            [Direction.Bottom]: FALSE,
-            [Direction.Right]: TRUE,
-            'center': FALSE,
-        },
-        'center': null,
-    }
-}
-const TrackVariantTR = {
-    variant: TrackVariantName.TopRight,
-    orientation: {
-        [Direction.Top]: {
-            [Direction.Bottom]: FALSE,
-            [Direction.Left]: FALSE,
-            [Direction.Right]: TRUE,
-            'center': FALSE,
-        },
-        [Direction.Bottom]: null,
-        [Direction.Right]: {
-            [Direction.Top]: TRUE,
-            [Direction.Bottom]: FALSE,
-            [Direction.Left]: FALSE,
-            'center': FALSE,
-        },
-        [Direction.Left]: null,
-        'center': null,
-    }
-}
-const TrackVariantRB = {
-    variant: TrackVariantName.RightBottom,
-    orientation: {
-        [Direction.Top]: null,
-        [Direction.Right]: {
-            [Direction.Top]: FALSE,
-            [Direction.Bottom]: TRUE,
-            [Direction.Left]: FALSE,
-            'center': FALSE,
-        },
-        [Direction.Bottom]: {
-            [Direction.Top]: FALSE,
-            [Direction.Right]: TRUE,
-            [Direction.Left]: FALSE,
-            'center': FALSE,
-        },
-        [Direction.Left]: null,
-        'center': null,
-    }
-}
-const TrackVariantBL = {
-    variant: TrackVariantName.BottomLeft,
-    orientation: {
-        [Direction.Top]: null,
-        [Direction.Right]: null,
-        [Direction.Bottom]: {
-            [Direction.Top]: FALSE,
-            [Direction.Right]: FALSE,
-            [Direction.Left]: TRUE,
-            'center': FALSE,
-        },
-        [Direction.Left]: {
-            [Direction.Top]: FALSE,
-            [Direction.Bottom]: TRUE,
-            [Direction.Right]: FALSE,
-            'center': FALSE,
-        },
-        'center': null,
-    }
-}
-const TrackVariantLT = {
-    variant: TrackVariantName.LeftTop,
-    orientation: {
-        [Direction.Top]: {
-            [Direction.Right]: FALSE,
-            [Direction.Bottom]: FALSE,
-            [Direction.Left]: TRUE,
-            'center': FALSE,
-        },
-        [Direction.Right]: null,
-        [Direction.Bottom]: null,
-        [Direction.Left]: {
-            [Direction.Top]: TRUE,
-            [Direction.Bottom]: FALSE,
-            [Direction.Right]: FALSE,
-            'center': FALSE,
-        },
-        'center': null,
-    }
-}
-const TrackVariantCenterTop = {
-    variant: TrackVariantName.CenterTop,
-    orientation: {
-        [Direction.Top]: {
-            [Direction.Bottom]: FALSE,
-            [Direction.Left]: FALSE,
-            [Direction.Right]: FALSE,
-            'center': TRUE,
-        },
-        [Direction.Right]: null,
-        [Direction.Bottom]: null,
-        [Direction.Left]: null,
-        'center': {
-            [Direction.Top]: TRUE,
-            [Direction.Bottom]: FALSE,
-            [Direction.Left]: FALSE,
-            [Direction.Right]: FALSE,
-        }
-    }
-}
-const TrackVariantCenterRight = {
-    variant: TrackVariantName.CenterRight,
-    orientation: {
-        [Direction.Top]: null,
-        [Direction.Right]: {
-            [Direction.Top]: FALSE,
-            [Direction.Bottom]: FALSE,
-            [Direction.Left]: FALSE,
-            'center': TRUE,
-        },
-        [Direction.Bottom]: null,
-        [Direction.Left]: null,
-        'center': {
-            [Direction.Top]: FALSE,
-            [Direction.Bottom]: FALSE,
-            [Direction.Left]: FALSE,
-            [Direction.Right]: TRUE,
-        }
-    }
-}
-const TrackVariantCenterBottom = {
-    variant: TrackVariantName.CenterBottom,
-    orientation: {
-        [Direction.Top]: null,
-        [Direction.Right]: null,
-        [Direction.Bottom]: {
-            [Direction.Top]: FALSE,
-            [Direction.Right]: FALSE,
-            [Direction.Left]: FALSE,
-            'center': TRUE,
-        },
-        [Direction.Left]: null,
-        'center': {
-            [Direction.Top]: FALSE,
-            [Direction.Bottom]: TRUE,
-            [Direction.Left]: FALSE,
-            [Direction.Right]: FALSE,
-        }
-    }
-}
-const TrackVariantCenterLeft = {
-    variant: TrackVariantName.CenterLeft,
-    orientation: {
-        [Direction.Top]: null,
-        [Direction.Right]: null,
-        [Direction.Bottom]: null,
-        [Direction.Left]: {
-            [Direction.Top]: FALSE,
-            [Direction.Bottom]: FALSE,
-            [Direction.Right]: FALSE,
-            'center': TRUE,
-        },
-        'center': {
-            [Direction.Top]: FALSE,
-            [Direction.Bottom]: FALSE,
-            [Direction.Left]: TRUE,
-            [Direction.Right]: FALSE,
-        }
-    }
-}
-
-const TrackVariants = {
-    TrackVariantVertical,
-    TrackVariantHorizontal,
-    TrackVariantTR,
-    TrackVariantRB,
-    TrackVariantBL,
-    TrackVariantLT,
-    TrackVariantCenterTop,
-    TrackVariantCenterRight,
-    TrackVariantCenterBottom,
-    TrackVariantCenterLeft,
 }
 
 function isTrackCross(kind: TrackKind, address: Address, game: BoardModel): boolean {
@@ -839,16 +376,11 @@ function isTrackCenter(kind: TrackKind, address: Address, game: BoardModel) {
 }
 
 interface trackUtils {
-    TrackVariants: typeof TrackVariants;
     game?: BoardModel;
     isTrackCross(kind: TrackKind, address: Address, game: BoardModel): boolean;
     isTrackCenter(kind: TrackKind, address: Address, game: BoardModel): boolean;
     isTrackStraight(kind: TrackKind, address: Address, game: BoardModel): boolean;
     canBuild(params: CanBuildParams): boolean;
-    canBuildLandTrack(address: Address, game: BoardModel, trackKind: TrackKind, options: { orientation: Orientation }): boolean;
-    canBuildSail(address: Address, game: BoardModel, options: { orientation: Orientation }): boolean;
-    normalizeSailOrientation(orientation: Orientation): Orientation;
-    mergeEdgeToCenter(existing: Orientation | null, incoming: Orientation): Orientation | null;
 }
 
 const TrackUtils: trackUtils = {
@@ -862,12 +394,11 @@ const TrackUtils: trackUtils = {
         switch (trackKind) {
 
             case TrackKind.Railway: {
-                return this.canBuildLandTrack(address, this.game, trackKind, options);
+                return canBuildRailway(address, this.game, options);
             }
 
             case TrackKind.Road: {
                 return canBuildRoad(address, this.game, options);
-                // return this.canBuildLandTrack(address, this.game, trackKind, options);
             }
 
             case TrackKind.Sail: {
@@ -880,14 +411,9 @@ const TrackUtils: trackUtils = {
 
         }
     },
-    canBuildLandTrack,
-    canBuildSail,
     isTrackCross,
     isTrackCenter,
     isTrackStraight,
-    TrackVariants,
-    normalizeSailOrientation,
-    mergeEdgeToCenter
 }
 
 export default TrackUtils;

@@ -4,7 +4,7 @@ import TrackKind from "../enums/TrackKind.js";
 import type BoardModel from "../models/BoardModel.js";
 import Address from "../types/Address.js";
 import OrientationUtils from "./OrientationUtils.js";
-import TrackUtils from "./TrackUtils.js";
+import SailUtils from "./SailUtils.js";
 import type { FALSE, NULL, TRUE } from "./true-false.js";
 
 const connected: TRUE = true;
@@ -366,9 +366,25 @@ const narrowAllowedRoadOrientationsOnOccupiedField = (
         const sail = tracks.state.orientations[TrackKind.Sail];
         const railway = tracks.state.orientations[TrackKind.Railway];
 
-        if (!OrientationUtils.isEmptyOrientation(sail)) {
-            return [];
+        if (!OrientationUtils.isEmptyOrientation(sail) && sail) {
+            const sailVariantName = SailUtils.findSailVariantNameByOrientation(sail);
+            if (sailVariantName) {
+                switch (sailVariantName) {
+                    case SailUtils.OrientationName.Horizontal: {
+                        return [
+                            RoadOrientationName.Vertical
+                        ];
+                    }
+                    case SailUtils.OrientationName.Vertical: {
+                        return [
+                            RoadOrientationName.Horizontal
+                        ];
+                    }
+                }
+                return [];
+            }
         }
+
 
         if (railway) {
             allowedRoadOrientations.forEach(roadOrientationName => {
@@ -397,14 +413,15 @@ const narrowAllowedRoadOrientationsOnOccupiedField = (
 }
 
 const getAllowedRoadOrientations = (
-    sailOrientation: Orientation,
+    roadOriantation: Orientation,
     address: Address,
     game: BoardModel,
 ): RoadOrientationName[] => {
+
     const whichVariant = Object.entries(RoadOrientations).find((entry) => {
         const [variantName, orientationDefinition] = entry as [RoadOrientationName, Orientation];
         const definitionToken = OrientationUtils.tokenizeOrientation(orientationDefinition);
-        const roadOrientationToken = OrientationUtils.tokenizeOrientation(sailOrientation);
+        const roadOrientationToken = OrientationUtils.tokenizeOrientation(roadOriantation);
         if (definitionToken === roadOrientationToken) {
             return variantName;
         }
@@ -412,7 +429,12 @@ const getAllowedRoadOrientations = (
     });
 
     if (!whichVariant) {
-        return Object.values(RoadOrientationName);
+        const roadOrientationsDueToOtherTrackKinds: RoadOrientationName[] = narrowAllowedRoadOrientationsOnOccupiedField(
+            Object.values(RoadOrientationName),
+            address,
+            game
+        );
+        return roadOrientationsDueToOtherTrackKinds;
     }
 
     const [existingOrientationName] = whichVariant as [RoadOrientationName, Orientation];

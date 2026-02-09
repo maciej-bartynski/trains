@@ -532,11 +532,25 @@ const getAllowedSailOrientations = (sailOrientation: Orientation): SailOrientati
     }
 }
 
+const findSailVariantNameByOrientation = (demandedOrientation: Orientation) => {
+    const entryFound = Object.entries(SailOrientations).find(entry => {
+        const [name, orientation] = entry as [SailOrientationName, Orientation];
+        const tokenizedConnection = OrientationUtils.tokenizeOrientation(orientation);
+        const tokenizedDemandedOrientation = OrientationUtils.tokenizeOrientation(demandedOrientation);
+        return tokenizedConnection === tokenizedDemandedOrientation;
+    });
+    if (entryFound) {
+        return entryFound[0] as SailOrientationName;
+    }
+    return null;
+}
+
 interface sailUtils {
     game?: BoardModel,
     getAllowedSailOrientations: (sailOrientation: Orientation) => SailOrientationName[],
     Orientations: typeof SailOrientations,
     OrientationName: typeof SailOrientationName,
+    findSailVariantNameByOrientation: (demandedOrientation: Orientation) => SailOrientationName | null,
     getIsSailOrientationAdjacentToWater: (params: {
         address: Address;
         sailOrientation: Orientation;
@@ -548,7 +562,8 @@ const SailUtils: sailUtils = {
     getAllowedSailOrientations,
     Orientations: SailOrientations,
     OrientationName: SailOrientationName,
-    getIsSailOrientationAdjacentToWater
+    getIsSailOrientationAdjacentToWater,
+    findSailVariantNameByOrientation
 }
 
 export default SailUtils;

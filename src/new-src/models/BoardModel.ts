@@ -19,6 +19,7 @@ import TrackModel from "./TrackModel.js";
 import TrainModel from "./TrainModel.js";
 import baseSetup from "../scenarios/base.js";
 import SailUtils from "../utils/SailUtils.js";
+import RailwayUtils from "../utils/RailwayUtils.js";
 
 class BoardModel {
 
@@ -501,40 +502,32 @@ class BoardModel {
         })
 
         if (canBuild) {
+
             const { tracks } = this.getStateByAddress(address) ?? {};
 
-            let existingTracks: Record<TrackKind, Orientation | null> = Object.assign({}, tracks?.state.orientations ?? {
-                [TrackKind.Railway]: null,
-                [TrackKind.Road]: null,
-                [TrackKind.Sail]: null,
-                [TrackKind.Fly]: null,
+            const existingTracks: Record<TrackKind, Orientation | null> = Object.assign({}, tracks?.state.orientations ?? {
+                [TrackKind.Railway]: tracks?.state.orientations.railway ?? null,
+                [TrackKind.Road]: tracks?.state.orientations.road ?? null,
+                [TrackKind.Sail]: tracks?.state.orientations.sail ?? null,
+                [TrackKind.Fly]: tracks?.state.orientations.fly ?? null,
             });
 
-            const hasBuilding = !!this.getStateByAddress(address)?.buildings;
-            const mergedOrientation = !hasBuilding
-                ? TrackUtils.mergeEdgeToCenter(existingTracks[params.kind] ?? null, params.orientation)
-                : null;
-
-            const toBeUpdatedKind = existingTracks[params.kind];
-
-            if (mergedOrientation) {
-                existingTracks[params.kind] = mergedOrientation;
-            } else if (!toBeUpdatedKind) {
-                existingTracks[params.kind] = params.orientation;
-            } else {
-                existingTracks = OrientationUtils.mergeOrientations({
-                    orientations: existingTracks,
-                    orientationsUpdate: {
-                        [params.kind]: params.orientation
-                    }
-                });
+            if (params.kind === TrackKind.Railway) {
+                if (existingTracks[TrackKind.Railway]) {
+                    existingTracks[TrackKind.Railway] = RailwayUtils.mergeRailwayOrientations({
+                        orientation: existingTracks[TrackKind.Railway],
+                        orientationUpdate: params.orientation
+                    }) as any;
+                } else {
+                    existingTracks[TrackKind.Railway] = params.orientation;
+                }
             }
 
-            if (params.kind === TrackKind.Sail && existingTracks[TrackKind.Sail]) {
+            if (params.kind === TrackKind.Sail) {
                 existingTracks[TrackKind.Sail] = params.orientation;
             }
 
-            if (params.kind === TrackKind.Road && existingTracks[TrackKind.Road]) {
+            if (params.kind === TrackKind.Road) {
                 existingTracks[TrackKind.Road] = params.orientation;
             }
 
@@ -551,14 +544,6 @@ class BoardModel {
             }
 
             this._notifyListeners(PieceEnum.Tracks);
-
-            if (params.kind === TrackKind.Railway) {
-                Object.values(AdjacentFields.getAdjacentAddresses({ address })).forEach(adjacentAddress => {
-                    if (adjacentAddress) {
-                        this.updateRailwayCenterConnections(adjacentAddress);
-                    }
-                });
-            }
         }
     }
 }

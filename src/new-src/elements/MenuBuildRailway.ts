@@ -4,6 +4,7 @@ import BoardModel from "../models/BoardModel.js";
 import PieceEnum from "../models/BoardModel.type.js";
 import FieldModel from "../models/FieldModel.js";
 import Address from "../types/Address.js";
+import RailwayUtils from "../utils/RailwayUtils.js";
 import TrackUtils from "../utils/TrackUtils.js";
 
 type PropsMenuBuildRailway = {
@@ -68,26 +69,18 @@ class MenuBuildRailway extends StatefullElement<{}, PropsMenuBuildRailway> {
         if (selectedField) {
 
             const asyncSetButtons = async () => {
-                const promises = Object.values(TrackUtils.TrackVariants).map(async variantConfig => {
-                    const { variant, orientation } = variantConfig;
-                    return {
-                        can: await TrackUtils.canBuild({
-                            address: selectedField,
-                            trackKind: TrackKind.Railway,
-                            options: {
-                                orientation: orientation
-                            }
-                        }),
-                        orientation,
-                        variant,
-                    }
-                });
+                Object.entries(RailwayUtils.Variants).forEach(async variantConfig => {
+                    const [variant, orientation] = variantConfig;
 
-                const resolvedPromises = await Promise.all(promises);
-                this.buttonsList.innerHTML = '';
-                resolvedPromises.forEach(data => {
-                    const { can, variant, orientation } = data;
-                    if (can) {
+                    const canBuildRailway = TrackUtils.canBuild({
+                        address: selectedField,
+                        trackKind: TrackKind.Railway,
+                        options: {
+                            orientation: orientation
+                        }
+                    });
+
+                    if (canBuildRailway) {
                         const variantButton = document.createElement('button');
                         variantButton.innerText = variant;
                         variantButton.onclick = () => {
@@ -98,8 +91,13 @@ class MenuBuildRailway extends StatefullElement<{}, PropsMenuBuildRailway> {
                             })
                         }
                         this.buttonsList.appendChild(variantButton)
+                    } else {
+                        const variantButton = document.createElement('button');
+                        variantButton.innerText = `X[${variant}]X`;
+                        variantButton.disabled = true;
+                        this.buttonsList.appendChild(variantButton)
                     }
-                })
+                });
             }
 
             asyncSetButtons()
