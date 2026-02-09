@@ -18,6 +18,7 @@ import FieldModel from "./FieldModel.js";
 import TrackModel from "./TrackModel.js";
 import TrainModel from "./TrainModel.js";
 import baseSetup from "../scenarios/base.js";
+import SailUtils from "../utils/SailUtils.js";
 
 class BoardModel {
 
@@ -234,6 +235,8 @@ class BoardModel {
 
         BuildingUtils.game = this;
         TrackUtils.game = this;
+        SailUtils.game = this;
+
         AdjacentFields.game = this;
 
         State.game = this;
@@ -494,7 +497,7 @@ class BoardModel {
         const canBuild = TrackUtils.canBuild({
             address,
             trackKind: kind,
-            options: { orientations: params.orientation }
+            options: { orientation: params.orientation }
         })
 
         if (canBuild) {
@@ -528,7 +531,7 @@ class BoardModel {
             }
 
             if (params.kind === TrackKind.Sail && existingTracks[TrackKind.Sail]) {
-                existingTracks[TrackKind.Sail] = TrackUtils.normalizeSailOrientation(existingTracks[TrackKind.Sail]!);
+                existingTracks[TrackKind.Sail] = params.orientation;
             }
 
             const model = this.state[PieceEnum.Tracks].get(key);

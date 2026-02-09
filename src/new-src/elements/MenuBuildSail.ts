@@ -4,6 +4,7 @@ import BoardModel from "../models/BoardModel.js";
 import PieceEnum from "../models/BoardModel.type.js";
 import FieldModel from "../models/FieldModel.js";
 import Address from "../types/Address.js";
+import SailUtils, { SailOrientationName } from "../utils/SailUtils.js";
 import TrackUtils from "../utils/TrackUtils.js";
 
 type PropsMenuBuildSail = {
@@ -65,38 +66,40 @@ class MenuBuildSail extends StatefullElement<{}, PropsMenuBuildSail> {
 
         if (selectedField) {
             const asyncSetButtons = () => {
-                const variants = Object.values(TrackUtils.TrackVariants).map(variantConfig => {
-                    const { variant, orientation } = variantConfig;
-                    return {
-                        can: TrackUtils.canBuild({
-                            address: selectedField,
-                            trackKind: TrackKind.Sail,
-                            options: {
-                                orientations: orientation
-                            }
-                        }),
-                        orientation,
-                        variant,
-                    }
-                });
-
                 this.buttonsList.innerHTML = '';
 
-                variants.forEach(data => {
-                    const { can, variant, orientation } = data;
-                    if (can) {
+                Object.entries(SailUtils.Orientations).forEach(variantConfigEntry => {
+                    const [variantName, variantConfig] = variantConfigEntry as [SailOrientationName, typeof SailUtils.Orientations[keyof typeof SailUtils.Orientations]];
+
+                    console.log("variant", variantName, variantConfig)
+
+                    const canBuildVariant = TrackUtils.canBuild({
+                        address: selectedField,
+                        trackKind: TrackKind.Sail,
+                        options: {
+                            orientation: variantConfig
+                        }
+                    });
+
+                    if (canBuildVariant) {
                         const variantButton = document.createElement('button');
-                        variantButton.innerText = variant;
+                        variantButton.innerText = variantName;
                         variantButton.onclick = () => {
                             BoardModel.I().onBuildTrack({
                                 address: selectedField,
                                 kind: TrackKind.Sail,
-                                orientation
+                                orientation: variantConfig
                             })
                         }
                         this.buttonsList.appendChild(variantButton)
+                    } else {
+                        const variantButton = document.createElement('button');
+                        variantButton.innerText = `X[${variantName}]X`;
+                        variantButton.disabled = true;
+                        variantButton.onclick = () => { }
+                        this.buttonsList.appendChild(variantButton)
                     }
-                })
+                });
             }
 
             asyncSetButtons()

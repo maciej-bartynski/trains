@@ -75,7 +75,7 @@ class MenuBuildRoad extends StatefullElement<{}, PropsMenuBuildRoad> {
                             address: selectedField,
                             trackKind: TrackKind.Road,
                             options: {
-                                orientations: orientation
+                                orientation: orientation
                             }
                         }),
                         orientation,

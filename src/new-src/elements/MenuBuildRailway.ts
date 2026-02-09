@@ -75,7 +75,7 @@ class MenuBuildRailway extends StatefullElement<{}, PropsMenuBuildRailway> {
                             address: selectedField,
                             trackKind: TrackKind.Railway,
                             options: {
-                                orientations: orientation
+                                orientation: orientation
                             }
                         }),
                         orientation,
