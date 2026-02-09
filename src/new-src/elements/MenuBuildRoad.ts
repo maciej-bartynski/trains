@@ -4,6 +4,7 @@ import BoardModel from "../models/BoardModel.js";
 import PieceEnum from "../models/BoardModel.type.js";
 import FieldModel from "../models/FieldModel.js";
 import Address from "../types/Address.js";
+import RoadUtils from "../utils/RoadUtils.js";
 import TrackUtils from "../utils/TrackUtils.js";
 
 type PropsMenuBuildRoad = {
@@ -42,7 +43,7 @@ class MenuBuildRoad extends StatefullElement<{}, PropsMenuBuildRoad> {
             <style>
                 ${MenuBuildRoad.tagName} {
                     width: 90%;
-                    height: 50px;
+                    min-height: 50px;
                     border: solid 1px black;
                     display: flex;
                     align-items: center;
@@ -65,41 +66,40 @@ class MenuBuildRoad extends StatefullElement<{}, PropsMenuBuildRoad> {
 
         this.buttonsList.innerHTML = '';
 
+
         if (selectedField) {
 
             const asyncSetButtons = () => {
-                const promises = Object.values(TrackUtils.TrackVariants).map(variantConfig => {
-                    const { variant, orientation } = variantConfig;
-                    return {
-                        can: TrackUtils.canBuild({
-                            address: selectedField,
-                            trackKind: TrackKind.Road,
-                            options: {
-                                orientation: orientation
-                            }
-                        }),
-                        orientation,
-                        variant,
-                    }
-                });
+                Object.entries(RoadUtils.Orientations).forEach(variantConfig => {
+                    const [variantName, orientation] = variantConfig;
+                    const canBuildRoadVariant = TrackUtils.canBuild({
+                        address: selectedField,
+                        trackKind: TrackKind.Road,
+                        options: {
+                            orientation: orientation
+                        }
+                    });
 
-                const resolvedPromises = promises;
-                this.buttonsList.innerHTML = '';
-                resolvedPromises.forEach(data => {
-                    const { can, variant, orientation } = data;
-                    if (can) {
+                    if (canBuildRoadVariant) {
                         const variantButton = document.createElement('button');
-                        variantButton.innerText = variant;
+                        variantButton.innerText = variantName;
                         variantButton.onclick = () => {
                             BoardModel.I().onBuildTrack({
                                 address: selectedField,
                                 kind: TrackKind.Road,
-                                orientation
+                                orientation: orientation
                             })
                         }
                         this.buttonsList.appendChild(variantButton)
+                    } else {
+                        const variantButton = document.createElement('button');
+                        variantButton.innerText = `X[${variantName}]X`;
+                        variantButton.disabled = true;
+                        variantButton.onclick = () => { }
+                        this.buttonsList.appendChild(variantButton)
                     }
-                })
+                });
+
             }
 
             asyncSetButtons()

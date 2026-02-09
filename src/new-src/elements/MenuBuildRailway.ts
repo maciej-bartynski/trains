@@ -42,7 +42,7 @@ class MenuBuildRailway extends StatefullElement<{}, PropsMenuBuildRailway> {
             <style>
                 ${MenuBuildRailway.tagName} {
                     width: 90%;
-                    height: 50px;
+                    min-height: 50px;
                     border: solid 1px black;
                     display: flex;
                     align-items: center;

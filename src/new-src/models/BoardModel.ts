@@ -534,6 +534,10 @@ class BoardModel {
                 existingTracks[TrackKind.Sail] = params.orientation;
             }
 
+            if (params.kind === TrackKind.Road && existingTracks[TrackKind.Road]) {
+                existingTracks[TrackKind.Road] = params.orientation;
+            }
+
             const model = this.state[PieceEnum.Tracks].get(key);
 
             if (!model) {

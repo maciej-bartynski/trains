@@ -3,8 +3,6 @@ import Orientation, { TrackNode, TrackNodeConnections } from "../enums/Orientati
 import TerrainKind from "../enums/TerrainKind.js";
 import TrackKind from "../enums/TrackKind.js";
 import type BoardModel from "../models/BoardModel.js";
-import FieldModel from "../models/FieldModel.js";
-import { FieldState } from "../models/FieldModel.type.js";
 import Address from "../types/Address.js";
 import AdjacentFields from "./AdjacentFields.js";
 import OrientationUtils from "./OrientationUtils.js";

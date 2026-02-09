@@ -42,7 +42,7 @@ class MenuBuildSail extends StatefullElement<{}, PropsMenuBuildSail> {
             <style>
                 ${MenuBuildSail.tagName} {
                     width: 90%;
-                    height: 50px;
+                    min-height: 50px;
                     border: solid 1px black;
                     display: flex;
                     align-items: center;
