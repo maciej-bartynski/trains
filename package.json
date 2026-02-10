@@ -1,7 +1,7 @@
 {
-  "name": "whoami",
+  "name": "trains",
   "version": "1.0.0",
-  "description": "whoami",
+  "description": "a little train game",
   "main": "./dist/index.js",
   "type": "module",
   "imports": {
@@ -14,7 +14,7 @@
     "test": "test"
   },
   "keywords": [
-    "whoami"
+    "trains"
   ],
   "author": "bartek0x1001",
   "license": "ISC",
