@@ -51,6 +51,8 @@ function canBuildRoad(
     const fieldData = game.getStateByAddress(address);
     const field = fieldData?.field;
     const tracks = fieldData?.tracks;
+    const buildings = fieldData?.buildings;
+    if (buildings) return false;
     if (!field || !field.state.terrain) {
         return false;
     }

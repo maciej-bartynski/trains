@@ -25,19 +25,16 @@ class TrackElement extends StatefullElement<{}, TrackModel['state']> {
 
     private trackStraight = (() => {
         const el = document.createElement('div');
-        // el.classList.add(`${TrackElement.tagName}_track-stright`);
         return el;
     })();
 
     private trackCenter = (() => {
         const el = document.createElement('div');
-        // el.classList.add(`${TrackElement.tagName}_track-center`);
         return el;
     })();
 
     private trackCurve = (() => {
         const el = document.createElement('div');
-        // el.classList.add(`${TrackElement.tagName}_track-curve`);
         return el;
     })();
 
@@ -77,87 +74,79 @@ class TrackElement extends StatefullElement<{}, TrackModel['state']> {
                 const layerElement = this[trackKind];
                 layerElement.innerHTML = '';
 
-                if (orientation.center) {
-                    /**
-                     * Tracks are centered
-                     */
-                    const directionFromCenter: Direction | undefined = Object
-                        .entries(orientation.center)
-                        .find(entry => {
-                            const [, isConnected] = entry;
-                            return isConnected;
-                        })?.[0] as Direction;
 
-                    /** always true */
-                    if (directionFromCenter) {
-                        const trackElement = this.trackCenter.cloneNode(true) as HTMLDivElement;
-                        trackElement.classList.add(`--${directionFromCenter.toLowerCase()}`);
-                        layerElement.appendChild(trackElement)
-                    }
-                } else {
-                    /** Any other orientation */
+                /** Any other orientation */
 
-                    const checkedDirectionPairs: Array<[Direction, Direction]> = [];
+                const checkedDirectionPairs: Array<[Direction, Direction]> = [];
 
-                    Object.entries(orientation).forEach(directionEntry => {
+                Object.entries(orientation).forEach(directionEntry => {
 
-                        const [direction, connectedDirections] = directionEntry as [Direction | 'center', Record<Direction, boolean> | null];
+                    const [direction, connectedDirections] = directionEntry as [Direction | 'center', Record<Direction, boolean> | null];
 
-                        if (direction === 'center') return;
-
-                        if (connectedDirections) {
-                            Object.entries(connectedDirections).forEach(entry => {
-                                const [connectedDirection, isConnected] = entry as [Direction, boolean];
+                    if (direction === 'center') {
+                        Object
+                            .entries(connectedDirections ?? {})
+                            .forEach(entry => {
+                                const [dir, isConnected] = entry;
                                 if (isConnected) {
-                                    const pair: [Direction, Direction] = [direction, connectedDirection];
-                                    const alreadyChecked = checkedDirectionPairs.some(checkedPair => {
-                                        return JSON.stringify(checkedPair.sort()) === JSON.stringify(pair.sort())
-                                    })
-
-                                    if (!alreadyChecked) {
-                                        checkedDirectionPairs.push(pair)
-                                    }
+                                    const trackElement = this.trackCenter.cloneNode(true) as HTMLDivElement;
+                                    trackElement.classList.add(`--${dir.toLowerCase()}`);
+                                    layerElement.appendChild(trackElement)
                                 }
-                            })
-                        }
-                    });
+                            });
+                    } else if (connectedDirections) {
+                        Object.entries(connectedDirections).forEach(entry => {
+                            const [connectedDirection, isConnected] = entry as [Direction, boolean];
+                            if (isConnected) {
+                                const pair: [Direction, Direction] = [direction, connectedDirection];
+                                const alreadyChecked = checkedDirectionPairs.some(checkedPair => {
+                                    return JSON.stringify(checkedPair.sort()) === JSON.stringify(pair.sort())
+                                })
 
-                    checkedDirectionPairs.forEach(uniquePair => {
-
-                        const shape: 'curve' | 'straight' = OpositeDirection[uniquePair[0]] === uniquePair[1]
-                            ? 'straight'
-                            : 'curve';
-
-                        if (shape === 'straight') {
-                            const trackElement = this.trackStraight.cloneNode(true) as HTMLDivElement;
-                            layerElement.appendChild(trackElement);
-
-                            const isVertical = uniquePair.some(dir => dir === Direction.Bottom);
-
-                            if (isVertical) {
-                                trackElement.classList.add(`--vertical`);
-                            } else {
-                                trackElement.classList.add(`--horizontal`)
+                                if (!alreadyChecked) {
+                                    checkedDirectionPairs.push(pair)
+                                }
                             }
+                        })
+                    }
+                });
+
+                checkedDirectionPairs.forEach(uniquePair => {
+
+                    const shape: 'curve' | 'straight' = OpositeDirection[uniquePair[0]] === uniquePair[1]
+                        ? 'straight'
+                        : 'curve';
+
+                    if (shape === 'straight') {
+                        const trackElement = this.trackStraight.cloneNode(true) as HTMLDivElement;
+                        layerElement.appendChild(trackElement);
+
+                        const isVertical = uniquePair.some(dir => dir === Direction.Bottom);
+
+                        if (isVertical) {
+                            trackElement.classList.add(`--vertical`);
+                        } else {
+                            trackElement.classList.add(`--horizontal`)
+                        }
+                    }
+
+                    if (shape === 'curve') {
+                        const trackElement = this.trackCurve.cloneNode(true) as HTMLDivElement;
+                        layerElement.appendChild(trackElement);
+
+                        const curveVariantClassnames = {
+                            [`${[Direction.Top, Direction.Right].sort().join(',')}`]: `--top-right`,
+                            [`${[Direction.Right, Direction.Bottom].sort().join(',')}`]: `--right-bottom`,
+                            [`${[Direction.Bottom, Direction.Left].sort().join(',')}`]: `--bottom-left`,
+                            [`${[Direction.Left, Direction.Top].sort().join(',')}`]: `--left-top`,
                         }
 
-                        if (shape === 'curve') {
-                            const trackElement = this.trackCurve.cloneNode(true) as HTMLDivElement;
-                            layerElement.appendChild(trackElement);
+                        const currentClassname = curveVariantClassnames[uniquePair.sort().join(',')]!;
 
-                            const curveVariantClassnames = {
-                                [`${[Direction.Top, Direction.Right].sort().join(',')}`]: `--top-right`,
-                                [`${[Direction.Right, Direction.Bottom].sort().join(',')}`]: `--right-bottom`,
-                                [`${[Direction.Bottom, Direction.Left].sort().join(',')}`]: `--bottom-left`,
-                                [`${[Direction.Left, Direction.Top].sort().join(',')}`]: `--left-top`,
-                            }
+                        trackElement.classList.add(currentClassname)
+                    }
+                })
 
-                            const currentClassname = curveVariantClassnames[uniquePair.sort().join(',')]!;
-
-                            trackElement.classList.add(currentClassname)
-                        }
-                    })
-                }
             }
         })
 

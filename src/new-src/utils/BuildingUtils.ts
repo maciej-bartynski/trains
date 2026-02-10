@@ -10,7 +10,7 @@ import Direction from "../enums/Direction.js";
 import { FieldState } from "../models/FieldModel.type.js";
 import AddressUtils from "./AddressUtils.js";
 
-export function canBuildRailwayStation(address: Address, game: BoardModel) {
+function canBuildRailwayStation(address: Address, game: BoardModel) {
     const {
         field,
         buildings,
