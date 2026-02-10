@@ -1,4 +1,7 @@
 enum BuildingKind {
+    // central
+    CentralWarehouse = 'central-warehouse',
+
     // train buildings
     RailwayStation = 'railway-station',
     RailwayGarage = 'railway-garage',
